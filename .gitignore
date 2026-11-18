@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pkl
+*.npy
+*.osm.pbf
+node_modules/
