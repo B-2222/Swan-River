@@ -31,7 +31,7 @@ function makeDetailTexture() {
 
 export function createTerrain(scene) {
   const detail = makeDetailTexture();
-  const mat = new THREE.MeshLambertMaterial({ map: W.landTex });
+  const mat = new THREE.MeshStandardMaterial({ map: W.landTex, roughness: 0.95, metalness: 0 });
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.tDetail = { value: detail };
     sh.vertexShader = sh.vertexShader
@@ -130,7 +130,7 @@ export function createTerrain(scene) {
           budget--;
           c.geos[lod] = build(c, lod);
         }
-        if (!c.mesh) { c.mesh = new THREE.Mesh(c.geos[lod], mat); c.mesh.matrixAutoUpdate = false; group.add(c.mesh); }
+        if (!c.mesh) { c.mesh = new THREE.Mesh(c.geos[lod], mat); c.mesh.matrixAutoUpdate = false; c.mesh.receiveShadow = true; group.add(c.mesh); }
         else c.mesh.geometry = c.geos[lod];
         c.lod = lod;
       }
@@ -143,7 +143,7 @@ export function createTerrain(scene) {
 
 // Rottnest and Garden Island, from the GSHHS full resolution shoreline (outside the OSM grid)
 export function createIslands(scene) {
-  const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.95 });
   for (const isl of W.islands) {
     const shape = new THREE.Shape(isl.pts.map(p => new THREE.Vector2(p[0], -p[1])));
     const geo = new THREE.ShapeGeometry(shape, 1);
@@ -173,6 +173,6 @@ export function createIslands(scene) {
     for (let i = 0; i < ring.length; i++) { sp.push(ring[i][0], 1.5, ring[i][1], ring[i][0] * 1.0, -3, ring[i][1]); }
     for (let i = 0; i < ring.length - 1; i++) { const a = i * 2; si.push(a, a + 1, a + 2, a + 2, a + 1, a + 3); }
     sk.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3)); sk.setIndex(si); sk.computeVertexNormals();
-    scene.add(new THREE.Mesh(sk, new THREE.MeshLambertMaterial({ color: 0xd8caa0, side: THREE.DoubleSide })));
+    scene.add(new THREE.Mesh(sk, new THREE.MeshStandardMaterial({ color: 0xd8caa0, side: THREE.DoubleSide, roughness: 0.95 })));
   }
 }

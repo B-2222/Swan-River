@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Swan River Hoon</title>
+<title>Swan River</title>
 <meta name="description" content="Jet ski game on a map-accurate Swan River, Perth WA. Rooster tails, Water Police, bridges and the run to the ocean.">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -32,7 +32,7 @@
   <div id="feed"></div>
   <div id="center"></div>
   <div id="bubbles"></div>
-  <div id="hint">W/S throttle and brake &middot; A/D steer &middot; SHIFT power slide &middot; SPACE hop &middot; C camera &middot; M map &middot; ESC menu</div>
+  <div id="hint">W/S throttle and brake &middot; A/D steer &middot; Q/E trim &middot; SHIFT slide &middot; SPACE hop &middot; 1-8 teleport &middot; M map (click to teleport) &middot; C camera &middot; ESC menu</div>
   <div id="touch">
     <div id="tSteer"><div id="tKnob"></div></div>
     <div id="tBtns">
@@ -45,28 +45,27 @@
   </div>
 </div>
 
-<div id="bigmap" class="hidden"><canvas id="bigmapCanvas"></canvas><div class="mapnote">Map data &copy; OpenStreetMap contributors &middot; speed zones shaded &middot; press M to close</div></div>
+<div id="bigmap" class="hidden"><canvas id="bigmapCanvas"></canvas><div class="mapnote">Click anywhere on the water to teleport there &middot; speed zones shaded &middot; Map data &copy; OpenStreetMap contributors &middot; M to close</div></div>
 
 <div id="loading">
-  <div class="logo">SWAN RIVER <span>HOON</span></div>
+  <div class="logo">SWAN <span>RIVER</span></div>
   <div id="loadMsg">Loading the Swan River...</div>
   <div id="loadBar"><div id="loadFill"></div></div>
 </div>
 
 <div id="menu" class="hidden">
   <div class="panel">
-    <div class="logo">SWAN RIVER <span>HOON</span></div>
+    <div class="logo">SWAN <span>RIVER</span></div>
     <div class="tag">Perth, Western Australia &middot; map-accurate from OpenStreetMap</div>
     <h3>Pick your ski</h3>
     <div id="skiList"></div>
-    <h3>Launch from</h3>
+    <h3>Launch from <small style="color:var(--dim);letter-spacing:0;text-transform:none">(or press 1 to 8 while riding)</small></h3>
     <div id="spawnList"></div>
     <h3>Settings</h3>
     <div class="row">
       <label>Rooster tail <select id="optTail"><option value="1">Big</option><option value="1.6" selected>Massive</option><option value="2.4">Ridiculous</option></select></label>
       <label>Time of day <select id="optTime"><option value="10">Morning</option><option value="15.5" selected>Arvo</option><option value="18.6">Sunset</option><option value="21.5">Night</option></select></label>
-      <label>Graphics <select id="optGfx"><option value="0">Low</option><option value="1" selected>Medium</option><option value="2">High</option></select></label>
-      <label><input type="checkbox" id="optVoices" checked> Shouting voices</label>
+      <label>Graphics <select id="optGfx"><option value="0">Low (no shadows)</option><option value="1">Medium (shadows)</option><option value="2" selected>High (shadows + reflections)</option></select></label>
       <label><input type="checkbox" id="optSound" checked> Sound</label>
     </div>
     <button id="startBtn">HIT THE WATER</button>

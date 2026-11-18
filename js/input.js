@@ -1,5 +1,5 @@
 // Keyboard, gamepad and touch input.
-export const input = { throttle: 0, brake: 0, steer: 0, slide: false, hop: false, keys: {}, pressed: new Set() };
+export const input = { throttle: 0, brake: 0, steer: 0, slide: false, hop: false, trim: 0, keys: {}, pressed: new Set() };
 
 const down = (k) => input.keys[k];
 window.addEventListener('keydown', (e) => {
@@ -47,6 +47,7 @@ export function pollInput() {
   if (down('w') || down('arrowup')) thr = 1;
   if (down('s') || down('arrowdown')) brk = 1;
   if (down('shift')) slide = true;
+  let trim = 0; if (down('e')) trim += 1; if (down('q')) trim -= 1;
   let pads = [];
   try { pads = navigator.getGamepads ? navigator.getGamepads() : []; } catch (e) { pads = []; }
   for (const p of pads) {
@@ -59,7 +60,7 @@ export function pollInput() {
   }
   steer += touch.steer * -1;
   if (touch.gas) thr = 1; if (touch.brake) brk = 1; if (touch.slide) slide = true;
-  input.steer = Math.max(-1, Math.min(1, steer)); input.throttle = thr; input.brake = brk; input.slide = slide;
+  input.steer = Math.max(-1, Math.min(1, steer)); input.throttle = thr; input.brake = brk; input.slide = slide; input.trim = trim;
   return input;
 }
 export function takePressed(k) { if (input.pressed.has(k)) { input.pressed.delete(k); return true; } return false; }

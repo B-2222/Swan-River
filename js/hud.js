@@ -2,6 +2,7 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { W, toXZ } from './world.js';
 import { ZONES } from './zones.js';
+import { POLICE_BASE } from './static.js';
 import { KN } from './jetski.js';
 
 const $ = (id) => document.getElementById(id);
@@ -13,6 +14,13 @@ export class HUD {
       stars: $('stars'), score: $('score'), combo: $('combo'), fines: $('fines'), clock: $('clock'), kn: $('spdKn'), kmh: $('spdKmh'), rpm: $('rpmFill'),
       ski: $('skiName'), feed: $('feed'), center: $('center'), bubbles: $('bubbles'), mm: $('minimap'), big: $('bigmap'), bigC: $('bigmapCanvas') };
     this.mmCtx = this.el.mm.getContext('2d');
+    this.onMapClick = null;
+    this.el.bigC.addEventListener('pointerdown', (e) => {
+      if (!this.onMapClick || !this.mapK) return;
+      const r = this.el.bigC.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width * this.el.bigC.width, py = (e.clientY - r.top) / r.height * this.el.bigC.height;
+      this.onMapClick(px / this.mapK * W.CELL + W.X0, py / this.mapK * W.CELL + W.Z0);
+    });
     this.bubbleList = [];
     this.centerT = 0; this.tick = 0;
     this.v = new THREE.Vector3();
@@ -102,6 +110,7 @@ export class HUD {
   drawBigMap(s) {
     const cv = this.el.bigC, img = W.minimapImg;
     const k = Math.min(innerWidth * 0.96 / img.width, innerHeight * 0.88 / img.height);
+    this.mapK = k;
     cv.width = Math.floor(img.width * k); cv.height = Math.floor(img.height * k);
     const c = cv.getContext('2d');
     c.drawImage(img, 0, 0, cv.width, cv.height);
@@ -118,6 +127,7 @@ export class HUD {
       ['Canning River', 115.88, -32.03], ['Cottesloe', 115.755, -31.996], ['Optus Stadium', 115.889, -31.951], ['Point Walter', 115.787, -32.012], ['Matilda Bay', 115.825, -31.98]];
     c.font = 'bold 13px sans-serif'; c.fillStyle = '#fff'; c.strokeStyle = 'rgba(0,0,0,.7)'; c.lineWidth = 3;
     for (const [n, lon, lat] of labels) { const [x, z] = toXZ(lon, lat); const [a, b] = P(x, z); c.strokeText(n, a, b); c.fillText(n, a, b); }
+    if (POLICE_BASE.x) { const [a, b] = P(POLICE_BASE.x, POLICE_BASE.z); c.fillStyle = '#0b2e8a'; c.fillRect(a - 7, b - 7, 14, 14); c.strokeStyle = '#fff'; c.lineWidth = 2; c.strokeRect(a - 7, b - 7, 14, 14); c.fillStyle = '#fff'; c.font = 'bold 12px sans-serif'; c.fillText('Water Police', a + 10, b + 4); }
     for (const u of s.police) { const [a, b] = P(u.boat.x, u.boat.z); c.fillStyle = '#2b5cff'; c.beginPath(); c.arc(a, b, 5, 0, 6.283); c.fill(); }
     const [a, b] = P(s.ski.x, s.ski.z);
     c.save(); c.translate(a, b); c.rotate(-s.ski.yaw);

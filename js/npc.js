@@ -7,7 +7,7 @@ const rnd = (seed) => { let s = (seed * 9301 + 49297) % 233280; return () => (s 
 const pick = (a, r = Math.random) => a[Math.floor(r() * a.length)];
 
 export const LINES = {
-  soaked: ['OI!', 'Ya flamin\' galah!', 'Get off the river, ya hoon!', 'Mate! My phone!', 'Strewth!', 'Not cool, bro!', 'I\'m calling the Water Police!',
+  soaked: ['OI!', 'Ya flamin\' galah!', 'Get off the river, ya hoon!', 'Mate! My phone!', 'Strewth!', 'Not cool, bro!',
     'Fair dinkum?!', 'My hot chips!!', 'That\'s 8 knots, mate!', 'Ya drongo!', 'Rack off!', 'Yeah nah, not cool!', 'Crikey, that\'s cold!',
     'My new kicks!', 'MUM! I got wet!', 'Bloody jet skis...', 'Oi, I just did my hair!', 'You\'re dreamin\', mate!', 'Unreal. Absolutely unreal.'],
   kid: ['AGAIN! AGAIN!', 'That was sick!', 'Do it again!', 'Mum, look!'],
@@ -16,7 +16,10 @@ export const LINES = {
   cheer: ['Send it!', 'Sick!', 'Yeeew!', 'Mad air!', 'Do a donut!', 'Big rooster tail!', 'Legend!'],
   driver: ['Can\'t see!', 'My windscreen!', 'Oi! Just washed it!', 'What the...!'],
   roo: ['*angry kangaroo noises*', '*thump thump thump*'],
+  caller: ['Right. I\'m calling the Water Police.', 'Got you on video, mate. Calling the cops.', 'Hello, Water Police? There\'s a hoon on a jet ski...', 'That\'s going straight to the police.'],
+  cop: ['Mate. I\'m a police officer.', 'Wrong bloke to soak, champ.', 'Off duty, not off the clock. Calling it in.'],
 };
+const HAIR = [0x2b1d14, 0x4a3020, 0x6b4a2b, 0xc9a66b, 0x111111, 0x8a8a8a, 0xa0522d];
 
 const SHIRTS = [0xe63946, 0xf1faee, 0x457b9d, 0x1d3557, 0xffb703, 0x2a9d8f, 0xe76f51, 0x8338ec, 0x06d6a0, 0x222222, 0xffffff, 0xff006e, 0x3a86ff, 0xfb8500];
 const SKINS = [0xf1c27d, 0xe0ac69, 0xc68642, 0x8d5524, 0xffdbac, 0x7a4a2a];
@@ -109,18 +112,21 @@ export class People {
     this.grid = new Map();
     this.spots.forEach((s, i) => { const k = Math.floor(s.x / 250) + ',' + Math.floor(s.z / 250); if (!this.grid.has(k)) this.grid.set(k, []); this.grid.get(k).push(i); });
     this.list = [];
-    const mat = new THREE.MeshLambertMaterial();
+    const mat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
     this.parts = {};
     for (const [name, geo] of Object.entries(personParts)) {
       const im = new THREE.InstancedMesh(geo, mat, CAP);
       im.count = 0; im.frustumCulled = false;
       im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       im.setColorAt(0, new THREE.Color());
+      im.castShadow = true; im.layers.set(1);
       scene.add(im); this.parts[name] = im;
     }
     const rodGeo = new THREE.CylinderGeometry(0.015, 0.02, 2.6, 4).translate(0, 1.3, 0);
-    this.rods = new THREE.InstancedMesh(rodGeo, new THREE.MeshLambertMaterial({ color: 0x222222 }), 80);
-    this.rods.count = 0; this.rods.frustumCulled = false; scene.add(this.rods);
+    this.rods = new THREE.InstancedMesh(rodGeo, new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 }), 80);
+    this.rods.count = 0; this.rods.frustumCulled = false; this.rods.layers.set(1); scene.add(this.rods);
+    this.phones = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 0.15, 0.015), new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0x3366aa, emissiveIntensity: 0.4, roughness: 0.2 }), 80);
+    this.phones.count = 0; this.phones.frustumCulled = false; this.phones.layers.set(1); scene.add(this.phones);
     const roo = merge([
       { geo: new THREE.SphereGeometry(0.42, 8, 6), color: 0x9a6b45, m: M(0, 0.85, 0, 0.5, 0, 0, 1, 1.4, 1) },
       { geo: new THREE.SphereGeometry(0.17, 8, 6), color: 0x9a6b45, m: M(0, 1.55, -0.28, 0, 0, 0, 1, 1, 1.5) },
@@ -130,8 +136,8 @@ export class People {
       { geo: new THREE.BoxGeometry(0.18, 0.12, 0.6), color: 0x7a5235, m: M(0.16, 0.06, -0.1) },
       { geo: new THREE.BoxGeometry(0.18, 0.12, 0.6), color: 0x7a5235, m: M(-0.16, 0.06, -0.1) },
     ]);
-    this.roos = new THREE.InstancedMesh(roo, new THREE.MeshLambertMaterial({ vertexColors: true }), 30);
-    this.roos.count = 0; this.roos.frustumCulled = false; scene.add(this.roos);
+    this.roos = new THREE.InstancedMesh(roo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }), 30);
+    this.roos.count = 0; this.roos.frustumCulled = false; this.roos.castShadow = true; this.roos.layers.set(1); scene.add(this.roos);
     this.timer = 0;
     this.tmpM = new THREE.Matrix4(); this.tmpQ = new THREE.Quaternion(); this.tmpV = new THREE.Vector3(); this.tmpE = new THREE.Euler(0, 0, 0, 'YXZ');
     this.one = new THREE.Vector3(1, 1, 1);
@@ -155,9 +161,12 @@ export class People {
       if (kind !== 'swim' && kind !== 'fish' && s.y == null && sdfAt(x, z) < 1.2) { x = s.x; z = s.z; }
       const y = s.y != null ? s.y : (kind === 'swim' ? -1.15 : Math.max(heightAt(x, z), 0.4));
       const kid = r() < 0.15 && kind !== 'fish';
+      // most people just yell; some are filming you and will ring the Water Police, a few are off-duty cops
+      const rr = r();
+      const role = kid || kind === 'swim' || kind === 'roo' ? 'normal' : rr < (s.kind === 'tourist' ? 0.25 : 0.12) ? 'caller' : rr < (s.kind === 'tourist' ? 0.28 : 0.15) ? 'cop' : 'normal';
       this.list.push({
         spot: idx, x, z, y, home: [x, z], face: s.ang + (r() - 0.5) * 1.2, kind, baseKind: kind, kid,
-        shirt: new THREE.Color(pick(SHIRTS, r)), skin: new THREE.Color(pick(SKINS, r)), shorts: new THREE.Color(pick(SHORTS, r)),
+        role, shirt: new THREE.Color(role === 'cop' ? 0x1b2a4a : pick(SHIRTS, r)), skin: new THREE.Color(pick(SKINS, r)), shorts: new THREE.Color(role === 'cop' ? 0x2a2f38 : pick(SHORTS, r)), hair: new THREE.Color(pick(HAIR, r)),
         phase: r() * 10, walkDir: r() < 0.5 ? 1 : -1, walked: 0, wet: 0, react: 0, fall: 0, cooldown: 0, cheer: 0, flee: 0, onBridge: s.y != null && s.kind !== 'jetty',
       });
     }
@@ -181,9 +190,9 @@ export class People {
     }
     const t = performance.now() / 1000;
     const g = { x: 0, z: 0 };
-    let n = 0, nr = 0, nroo = 0;
+    let n = 0, nr = 0, nroo = 0, nph = 0;
     for (const p of this.list) {
-      p.cooldown -= dt; p.react -= dt; p.cheer -= dt; p.flee -= dt;
+      p.cooldown -= dt; p.react -= dt; p.cheer -= dt; p.flee -= dt; p.calling = (p.calling || 0) - dt;
       p.wet = Math.max(0, p.wet - dt * 0.05);
       let walking = false;
       if (p.fall > 0) { p.fall = Math.max(0, p.fall - dt * 0.33); }
@@ -228,6 +237,8 @@ export class People {
       const swing = walking ? Math.sin(ph) * 0.6 : 0;
       let aL = walking ? -swing : 0.05, aR = walking ? swing : 0.05, rL = 0.12, rR = -0.12;
       if (p.kind === 'fish') { aR = -1.1; rR = -0.1; }
+      const filming = p.role === 'caller' && Math.hypot(p.x - player.x, p.z - player.z) < 160;
+      if (filming || p.calling > 0) { aR = p.calling > 0 ? -2.6 : -1.5; rR = p.calling > 0 ? -0.9 : -0.15; }
       if (p.kind === 'selfie') { aR = -2.4; rR = -0.2; }
       if (swim) { aL = Math.sin(t * 2.4 + p.phase) * 2; aR = Math.sin(t * 2.4 + p.phase + Math.PI) * 2; }
       if (p.react > 0) { aL = aR = -2.6; rL = 0.5; rR = -0.5; }               // hands up, cop the spray
@@ -240,11 +251,13 @@ export class People {
       const wetShirt = p.wet > 0.3 ? p.shirt.clone().multiplyScalar(0.6) : p.shirt;
       set('torso', T(0, bob, 0), wetShirt);
       set('head', T(0, bob, 0), p.skin);
+      set('hair', T(0, bob, 0), p.role === 'cop' ? p.shirt : p.hair);
       set('hips', T(0, bob, 0), p.shorts);
       set('legL', T(0.11, 0.86, 0, legA), p.skin);
       set('legR', T(-0.11, 0.86, 0, legB), p.skin);
       set('armL', T(0.28, 1.46 + bob, 0, aL, rL), p.skin);
       set('armR', T(-0.28, 1.46 + bob, 0, aR, rR), p.skin);
+      if ((filming || p.calling > 0) && nph < 80 && p.react <= 0) this.phones.setMatrixAt(nph++, T(-0.28, 1.46 + bob, 0, aR, rR).multiply(new THREE.Matrix4().makeTranslation(0, -0.6, 0.04)));
       if (p.kind === 'fish' && nr < 80 && p.react <= 0) {
         this.rods.setMatrixAt(nr++, T(-0.3, 1.0, -0.35, -0.9, 0));
       }
@@ -253,6 +266,7 @@ export class People {
     }
     for (const im of Object.values(this.parts)) { im.count = n; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
     this.rods.count = nr; this.rods.instanceMatrix.needsUpdate = true;
+    this.phones.count = nph; this.phones.instanceMatrix.needsUpdate = true;
     this.roos.count = nroo; this.roos.instanceMatrix.needsUpdate = true;
   }
   // spray targets near the player
@@ -292,10 +306,10 @@ export class Traffic {
       return { ...t, cum, len: cum[cum.length - 1], bbox: [a, b, c, d], cars: null };
     }).filter(p => p.len > 60);
     const g = carGeos();
-    const mat = new THREE.MeshLambertMaterial();
+    const mat = new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0.45 });
     this.body = new THREE.InstancedMesh(g.body, mat, CAR_CAP);
-    this.dark = new THREE.InstancedMesh(g.dark, new THREE.MeshLambertMaterial({ vertexColors: true }), CAR_CAP);
-    for (const im of [this.body, this.dark]) { im.count = 0; im.frustumCulled = false; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(im); }
+    this.dark = new THREE.InstancedMesh(g.dark, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.25, metalness: 0.3 }), CAR_CAP);
+    for (const im of [this.body, this.dark]) { im.count = 0; im.frustumCulled = false; im.castShadow = true; im.layers.set(1); im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(im); }
     this.body.setColorAt(0, new THREE.Color());
     this.timer = 0; this.active = [];
     this.m = new THREE.Matrix4(); this.q = new THREE.Quaternion(); this.v = new THREE.Vector3(); this.e = new THREE.Euler(); this.one = new THREE.Vector3(1, 1, 1);

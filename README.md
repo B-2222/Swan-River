@@ -1,4 +1,4 @@
-# Swan River Hoon
+# Swan River
 
 A browser jet ski game set on a map-accurate Swan River in Perth, Western Australia. Send massive rooster tails, soak people on the foreshore and cars on the bridges, run from the WA Water Police, and blast out through the Fremantle moles into the Indian Ocean (Rottnest is out there if you are keen).
 
@@ -9,62 +9,86 @@ Open `index.html` through any static web server (for example `python3 -m http.se
 | Key | Action |
 | --- | --- |
 | W / Up | Throttle |
-| S / Down | Brake, then reverse (like iBR) |
+| S / Down | Brake, then reverse (iBR style: the gate drops over the nozzle) |
 | A / D, Left / Right | Steer. Like a real ski, you need throttle to turn |
+| Q / E | Trim the nozzle down / up (up: bow lifts, faster, bigger rooster tail; down: more grip in turns) |
 | Shift | Power slide (throws a huge sheet of spray off the outside rail) |
-| Space | Hop |
+| Space | Hop (pull the bars and pop the hull out) |
+| 1 to 8 | Teleport to the launch spots (0 jumps to the Water Police base) |
+| M | Full map with speed zones. Click anywhere on the water to teleport there |
 | C | Camera (chase, far, first person, drone) |
-| M | Full map with speed zones |
 | R | Back to the nearest water if stuck |
 | T | Skip time forward 3 hours |
-| H | Horn |
 | Esc / P | Menu (change ski, launch spot, settings) |
 
-Touch controls appear automatically on phones and tablets. Gamepads work too (left stick, triggers, X slide, Y hop).
+Teleporting is blocked while the Water Police are after you. Touch controls appear automatically on phones and tablets. Gamepads work too.
 
 ### How to soak people
-The rooster tail comes off the steering nozzle, so a hard turn throws it out sideways. Ride close along the foreshore, then turn **away** from the people and the tail and carve sheet land on them. To soak cars, run under a bridge flat out so the tail goes up through the deck (the Massive tail peaks around 20 m, the Narrows Bridge deck is about 10.5 m).
+Ride close along the foreshore, then turn **away** from the people so the carve sheet and the tail land on them. To soak cars, run under a bridge flat out so the rooster tail goes up through the deck (the Massive tail climbs about 11 m, the Narrows Bridge deck is about 10.5 m; Ridiculous goes higher).
+
+## How the jet ski works
+
+The ski is a rigid body floating on 21 hull panels, built from how real personal watercraft work:
+
+* **Jet pump.** Water comes in through an intake under the hull and is fired out of the nozzle at the stern. Thrust is applied at the nozzle and is limited by engine power at speed, so the 325 hp RXP-X tops out at about 58 knots and the 90 hp Spark at about 43.
+* **Thrust vectoring.** The handlebars swing the nozzle. Off the throttle there is almost no steering, apart from a short off-throttle steering assist when you turn hard.
+* **Ventilation.** If the intake leaves the water (jumps, big rolls, skipping across chop at full noise) the pump sucks air, the revs flare and the thrust disappears until it hooks up again.
+* **Planing hull.** At rest it floats on buoyancy with about 13 cm of draft, the bow rises over the hump, then dynamic pressure lifts it onto the plane. The chines grip sideways, which is what lets it carve, and the rider leans it into turns.
+* **iBR.** Squeezing the brake drops a gate over the nozzle and fires the thrust forwards: about 4 seconds from 45 knots to walking pace, then reverse at about 5 knots.
+* **Water.** Afternoon sea-breeze chop (the Fremantle Doctor) is rougher out in Melville Water and calmer in the lee of the shore, the ocean has swell coming through the moles, and boat wakes are real Kelvin wedges you can jump.
+* **Rooster tail.** The jet stream hits the surface behind the ski and erupts into a thick column that breaks up into spray, bigger with trim up and when the nozzle is swung in a turn.
 
 ## What is real
 
-* **River, coastline and islands.** The water outline, Fremantle Inner Harbour, the moles, Heirisson Island, the Canning, Freshwater Bay, Point Walter and the rest come straight from OpenStreetMap (BBBike Perth extract). Rottnest and Garden Island come from the GSHHS full resolution shoreline.
+* **River, coastline and islands.** The water outline, Fremantle Inner Harbour, the moles, Heirisson Island, the Canning, Freshwater Bay, Point Walter and the rest come straight from OpenStreetMap (BBBike Perth extract). Rottnest and Garden Island come from the GSHHS full resolution shoreline. The map is at real scale; use the teleports to get around quickly.
 * **Bridges.** Every bridge over the navigable river (66 deck sections) on its real alignment: the Narrows (road, rail and shared path decks), Causeway, Matagarup (with its arches), Boorloo, Windan, Goongoonup, Elizabeth Quay Bridge, Canning Bridge, Mount Henry, Shelley, Stirling Bridge, the new Walyalup Bridge and the Fremantle rail bridge. Deck heights are estimates.
-* **Buildings.** 14,939 real building footprints near the water (the whole CBD, Elizabeth Quay, Crown, South Perth, Fremantle). Heights come from OSM tags where mapped, otherwise from the building type. CBD windows light up at night.
-* **Jetties, marinas and moorings.** 922 real jetties and breakwaters, every OSM-mapped marina and swing mooring, so the yacht club pens and Freshwater Bay moorings are where they should be.
+* **Buildings.** 14,939 real building footprints near the water (the whole CBD, Elizabeth Quay, Crown, South Perth, Fremantle). Heights come from OSM tags where mapped, otherwise from the building type. Facades are glass towers, offices, apartments, houses with tiled roofs and sheds; windows light up at night.
+* **Water Police base.** The station sits where it really is: Point Direction at the end of Harvest Road, North Fremantle, on the OSM building and pontoons tagged "Fremantle Water Police", with boats moored and reinforcements launching from it.
+* **Jetties, marinas and moorings.** 922 real jetties and breakwaters, every OSM-mapped marina and swing mooring.
 * **Landmarks.** The Crawley Edge Boatshed on its jetty, the Bell Tower, Kings Park and its War Memorial, the DNA Tower, the North Mole (red) and South Mole (green) lighthouses, the Round House, the Fremantle container cranes at their OSM positions, Wadjemup lighthouse on Rotto. Heirisson Island has kangaroos.
 * **Traffic.** Cars drive (on the left) along the real road network over every road bridge and along the riverside roads.
-* **Ferries.** The Perth Water ferry shuttles between Elizabeth Quay and the Mends Street Jetty, and a Rottnest fast cat leaves Barrack Street, obeys the speed zones down the river and heads out to sea. Both throw wakes you can jump.
-* **Sun and weather.** Southern hemisphere sun (it crosses the north and sets over the ocean), November sunrise and sunset times, and the afternoon sea breeze (the Fremantle Doctor) chops up the river.
-* **Jet skis.** Sea-Doo RXP-X 325, Yamaha GP SVHO, Kawasaki Ultra 310R and Sea-Doo Spark Trixx, with published power, length and approximate top speeds. The rider wears a life jacket, which is compulsory on PWCs in WA.
+* **Ferries.** The Perth Water ferry shuttles between Elizabeth Quay and the Mends Street Jetty, and a Rottnest fast cat leaves Barrack Street, obeys the speed zones down the river and heads out to sea.
+* **Sun.** Southern hemisphere sun (it crosses the north and sets over the ocean) with November sunrise and sunset times.
+* **Jet skis.** Sea-Doo RXP-X 325, Yamaha GP SVHO, Kawasaki Ultra 310R and Sea-Doo Spark Trixx, with published power, length, weight and approximate top speeds. The rider wears a life jacket, which is compulsory on PWCs in WA.
 
 ### Speed zones (based on WA Department of Transport rules)
 
 * 8 knots: Fremantle Port up to Mosman Bay, Perth Water (Narrows Bridge to the Causeway and on to the Windan Bridge), Matilda Bay, the upper Swan above the Windan Bridge, and the upper Canning outside the ski area.
-* 8 knots through any bridge arch unless signed otherwise.
-* 8 knots within 50 m of a person in the water.
+* 8 knots through any bridge arch unless signed otherwise, and within 50 m of a person in the water.
 * 10 knots between sunset and sunrise outside the restricted areas.
 * Freestyle (jumps, donuts) is only allowed in the gazetted Narrows PWC area downstream of the Narrows Bridge. You score 1.5x in there and the cops do not care.
 
-Zone boundaries are simplified into polygons for the game and some have changed over the years, so do not use this as a boating guide. Check the Department of Transport before you go out for real.
+Zone boundaries are simplified into polygons for the game, so do not use this as a boating guide. Check the Department of Transport before you go out for real.
 
 ### Water Police
 
-Patrols start from the real Fremantle Water Police base in North Fremantle and patrol Perth Water, Melville Water and Fremantle. They only book what they see (land blocks line of sight). Wanted stars bring in more units and at three stars the PolAir helicopter (with a spotlight at night). Break line of sight and stay hidden to escape. Stop next to a police boat and you get pulled over with an infringement notice. Police vessel types follow the WA Water Police fleet as reported publicly: a 17.7 m patrol vessel (Cygnet V class), a 7.6 m jet boat and RHIBs.
+They do not chase you just for breaking a rule out of their sight:
+
+* **The wrong person.** Most people on the shore just yell. People filming you on their phone, and the odd off-duty cop, ring it in when you soak them. A unit is sent to that spot; get out of there before it arrives and the call-out is stood down.
+* **Seen doing it.** If a patrol actually watches you soak someone, drench a police boat or ram one, it is a pursuit straight away.
+* **Warnings first.** Speeding or freestyling right in front of a patrol gets a loudspeaker warning. Keep it up in front of them and they pull you over.
+
+More stars bring more units from the base and, at three stars, the PolAir helicopter (with a spotlight at night). Break line of sight and stay hidden to escape. Stop next to a police boat and you get pulled over with an infringement notice. Police vessels follow the WA Water Police fleet as reported publicly: a 17.7 m patrol vessel (Cygnet V class), a 7.6 m jet boat and RHIBs.
 
 Fines use amounts from the WA Marine (Infringements) Regulations and news reporting: $160 for exceeding 8 knots in a restricted area or through a bridge arch, $200 within 50 m of a person in the water, $300 for reckless operation of a PWC.
+
+## Graphics
+
+Low, Medium (sun shadows) and High (shadows plus real mirror reflections of the city in the water). If the frame rate drops too low the game steps the setting down once by itself.
 
 ## Project layout
 
 ```
 index.html, css/          page, HUD and menus
-js/main.js                game loop, scoring, offences
+js/main.js                game loop, scoring, offences, teleports
 js/world.js               loads the map data, height and shore-distance queries
 js/terrain.js             land mesh in level-of-detail chunks, Rottnest
-js/water.js               water shader, waves (shared with the physics), wake foam
-js/sky.js                 day and night cycle
-js/static.js              buildings, bridges, jetties, moorings, landmarks, trees, collisions
-js/jetski.js              jet ski physics and chase camera
-js/spray.js               rooster tail and spray particles, hit detection
+js/water.js               water surface, waves (shared with the physics), wakes, planar reflections
+js/sky.js                 sky, clouds, day and night, environment lighting
+js/static.js              buildings, bridges, jetties, moorings, landmarks, Water Police base, trees, collisions
+js/jetski.js              rigid-body jet ski physics and chase camera
+js/jetstream.js           the rooster tail jet
+js/spray.js               spray particles and hit detection
 js/npc.js                 people, swimmers, kangaroos, bridge traffic
 js/boats.js               ferries, Rottnest fast cat, ski boats, yachts, kayaks, wakes
 js/police.js              Water Police AI, wanted level, PolAir

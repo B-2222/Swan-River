@@ -1,6 +1,6 @@
-// Synthesised audio: supercharged engine, water rush, police wail siren, horns, splashes, and shouted lines.
+// Synthesised audio: supercharged engine, water rush, police wail siren, horns and splashes.
 export class Sound {
-  constructor() { this.ctx = null; this.enabled = true; this.voices = true; this.lastSpeak = 0; this.voice = null; }
+  constructor() { this.ctx = null; this.enabled = true; }
   init() {
     if (this.ctx) { this.ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -34,10 +34,6 @@ export class Sound {
     this.sLfo.connect(lg).connect(this.sOsc.frequency);
     this.sGain = c.createGain(); this.sGain.gain.value = 0;
     this.sOsc.connect(this.sGain).connect(this.master); this.sOsc.start(); this.sLfo.start();
-    if (window.speechSynthesis) {
-      const pickVoice = () => { const vs = speechSynthesis.getVoices(); this.voice = vs.find(v => /en-AU/i.test(v.lang)) || vs.find(v => /en-GB/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null; };
-      pickVoice(); speechSynthesis.onvoiceschanged = pickVoice;
-    }
   }
   update(dt, ski, sirenDist, air) {
     if (!this.ctx) return;
@@ -77,14 +73,5 @@ export class Sound {
     const o = c.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(880, c.currentTime); o.frequency.setValueAtTime(1320, c.currentTime + 0.08);
     o.connect(g).connect(this.master); o.start(); o.stop(c.currentTime + 0.4);
   }
-  speak(text, kind = 'person') {
-    if (!this.voices || !this.enabled || !window.speechSynthesis) return;
-    const now = performance.now();
-    if (now - this.lastSpeak < 1800 || speechSynthesis.speaking) return;
-    this.lastSpeak = now;
-    const u = new SpeechSynthesisUtterance(text.replace(/\*/g, ''));
-    if (this.voice) u.voice = this.voice;
-    u.rate = kind === 'cop' ? 1.05 : 1.15; u.pitch = kind === 'kid' ? 1.6 : kind === 'cop' ? 0.8 : 0.8 + Math.random() * 0.6; u.volume = 0.9;
-    speechSynthesis.speak(u);
-  }
+  speak() { /* voices removed on request: speech bubbles only */ }
 }

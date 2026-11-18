@@ -10,6 +10,7 @@ export class Spray {
     this.life = new Float32Array(N).fill(1);
     this.size = new Float32Array(N);
     this.alpha = new Float32Array(N);
+    this.src = new Uint8Array(N); // 0 = the player's water, 1 = other boats
     this.next = 0;
     this.light = 1;
     const g = new THREE.BufferGeometry();
@@ -51,8 +52,9 @@ export class Spray {
     this.points.renderOrder = 5;
     scene.add(this.points);
   }
-  emit(x, y, z, vx, vy, vz, size, life) {
+  emit(x, y, z, vx, vy, vz, size, life, src = 0) {
     const i = this.next; this.next = (this.next + 1) % this.N;
+    this.src[i] = src;
     const o = i * 3;
     this.pos[o] = x; this.pos[o + 1] = y; this.pos[o + 2] = z;
     this.vel[o] = vx; this.vel[o + 1] = vy; this.vel[o + 2] = vz;
@@ -97,7 +99,7 @@ export class Spray {
     }
     const P = this.pos;
     for (let i = 0; i < this.N; i += 2) {
-      if (this.age[i] >= this.life[i] || this.age[i] < 0.05) continue;
+      if (this.age[i] >= this.life[i] || this.age[i] < 0.05 || this.src[i]) continue;
       const o = i * 3, x = P[o], y = P[o + 1], z = P[o + 2];
       const list = grid.get(Math.floor(x / cell) * 73856093 ^ Math.floor(z / cell) * 19349663);
       if (!list) continue;

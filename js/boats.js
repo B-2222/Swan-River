@@ -1,14 +1,13 @@
 // AI boats: Perth Water ferry (Elizabeth Quay <-> Mends Street), Rottnest fast cat, ski boats, yachts, tinnies and kayaks.
 import * as THREE from '../vendor/three.module.min.js';
 import { sdfAt, sdfGrad, toXZ } from './world.js';
-import { boatGeo } from './models.js';
+import { boatModel } from './models.js';
 import { waveHeight } from './water.js';
 import { findPath, navClear, randomWater } from './nav.js';
 import { zoneAt } from './zones.js';
 import { KN } from './jetski.js';
 
 const tmpG = { x: 0, z: 0 };
-const lambert = new THREE.MeshLambertMaterial({ vertexColors: true });
 
 export class AIBoat {
   constructor(scene, obj, o) {
@@ -79,7 +78,7 @@ export class AIBoat {
       if (spray && this.speed > 6 && Math.random() < this.speed * dt * 0.8) {
         const rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
         for (const s of [-1, 1]) spray.emit(this.x + fx * this.L * 0.3 + rx * s * this.B * 0.5, h + 0.3, this.z + fz * this.L * 0.3 + rz * s * this.B * 0.5,
-          rx * s * 3 + fx * this.speed * 0.5, 1.5 + Math.random() * 1.5, rz * s * 3 + fz * this.speed * 0.5, 0.5 + Math.random() * 0.3, 0.9);
+          rx * s * 3 + fx * this.speed * 0.5, 1.5 + Math.random() * 1.5, rz * s * 3 + fz * this.speed * 0.5, 0.5 + Math.random() * 0.3, 0.9, 1);
       }
     }
   }
@@ -98,7 +97,7 @@ export class AIBoat {
   remove() { this.scene.remove(this.obj); }
 }
 
-function meshOf(type, o) { const m = new THREE.Mesh(boatGeo(type, o), lambert); const g = new THREE.Group(); g.add(m); return g; }
+function meshOf(type, o) { return boatModel(type, o); }
 
 export class Boats {
   constructor(scene) {
