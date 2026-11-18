@@ -1,5 +1,5 @@
 // People on the foreshore, jetties and bridges, swimmers, Heirisson Island kangaroos, and traffic on the bridges.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { W, heightAt, sdfAt, sdfGrad, toXZ, COVER, coverAt } from './world.js';
 import { personParts, carGeos, merge, M } from './models.js';
 

@@ -6,6 +6,7 @@
   --accent2: #19c3e6;
   --danger: #ff3b3b;
   --police: #2b5cff;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1b2b; color: var(--ink);
@@ -51,7 +52,7 @@ button { font: inherit; }
 
 /* HUD */
 #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
-#topleft { position: absolute; left: 16px; top: 14px; }
+#topleft { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: calc(14px + env(safe-area-inset-top, 0px)); }
 #place { font-size: 22px; font-weight: 900; font-style: italic; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
 #zone { display: flex; align-items: center; gap: 10px; margin-top: 8px; background: rgba(0,0,0,.35); padding: 6px 12px 6px 6px; border-radius: 30px; width: max-content; max-width: 70vw; }
 #zoneSign { width: 46px; height: 46px; border-radius: 50%; background: #fff; border: 6px solid #d81e1e; display: flex; align-items: center; justify-content: center; color: #111; font-weight: 900; font-size: 18px; flex: none; }
@@ -61,7 +62,7 @@ button { font: inherit; }
 #zoneText small { display: block; color: var(--dim); font-size: 12px; }
 #zone.warn { background: rgba(216,30,30,.55); animation: pulse .6s infinite alternate; }
 @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.04); } }
-#topright { position: absolute; right: 16px; top: 12px; text-align: right; }
+#topright { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); text-align: right; }
 #stars { font-size: 30px; letter-spacing: 2px; color: rgba(255,255,255,.25); text-shadow: 0 2px 4px rgba(0,0,0,.5); }
 #stars .on { color: #ffd23f; text-shadow: 0 0 12px #ffb300; }
 #stars.flash .on { animation: blink .4s infinite alternate; }

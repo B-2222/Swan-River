@@ -1,5 +1,5 @@
 // Sky dome and lighting. Southern hemisphere: the sun rises in the east, crosses the NORTH, sets over the Indian Ocean.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 
 const C = (r, g, b) => new THREE.Color(r, g, b);
 const lerpC = (a, b, t) => a.clone().lerp(b, t);

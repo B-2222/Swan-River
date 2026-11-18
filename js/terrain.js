@@ -1,5 +1,5 @@
 // Land and shoreline mesh built from the OSM-derived height grid, in level-of-detail chunks.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { W } from './world.js';
 
 const CH = 64; // cells per chunk side

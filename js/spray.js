@@ -1,5 +1,5 @@
 // Rooster tails, carve spray and splashes as a GPU point cloud, plus hit testing against people/cars/boats.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 
 export class Spray {
   constructor(scene, N = 9000) {

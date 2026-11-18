@@ -1,5 +1,5 @@
 // Procedural low-poly models with vertex colours (no external assets).
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 
 const tmpM = new THREE.Matrix4();
 export const col = (hex) => new THREE.Color(hex);

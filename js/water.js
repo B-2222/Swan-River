@@ -1,5 +1,5 @@
 // Water surface: depth-tinted Swan River (tannin brown-green), ocean swell beyond the moles, foam and wakes.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { W, oceanAt } from './world.js';
 
 // Wave set shared by the shader and the physics so the jet ski rides the same surface you see.

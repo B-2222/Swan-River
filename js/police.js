@@ -1,5 +1,5 @@
 // WA Water Police: patrols, witnessing offences, wanted level, pursuit with A* through the river, PolAir helicopter.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { sdfAt, toXZ, waterLOS, W } from './world.js';
 import { policeBoat, merge, M } from './models.js';
 import { AIBoat } from './boats.js';

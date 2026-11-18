@@ -1,5 +1,5 @@
 // Swan River Hoon: main loop.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { loadWorld, W, sdfAt, heightAt, toXZ, oceanAt } from './world.js';
 import { createTerrain, createIslands } from './terrain.js';
 import { createWater, waveState } from './water.js';

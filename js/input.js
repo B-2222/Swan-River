@@ -47,7 +47,8 @@ export function pollInput() {
   if (down('w') || down('arrowup')) thr = 1;
   if (down('s') || down('arrowdown')) brk = 1;
   if (down('shift')) slide = true;
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  let pads = [];
+  try { pads = navigator.getGamepads ? navigator.getGamepads() : []; } catch (e) { pads = []; }
   for (const p of pads) {
     if (!p) continue;
     if (Math.abs(p.axes[0]) > 0.15) steer -= p.axes[0];

@@ -1,6 +1,6 @@
 // Loads the map data built from OpenStreetMap (see tools/build.py) and answers spatial queries.
 // World units are metres. x = east, z = south (so north is -z). Origin is lon 115.80, lat -32.00.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 
 export const W = {
   json: null, NX: 0, NZ: 0, X0: 0, Z0: 0, CELL: 15,

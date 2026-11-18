@@ -1,5 +1,5 @@
 // AI boats: Perth Water ferry (Elizabeth Quay <-> Mends Street), Rottnest fast cat, ski boats, yachts, tinnies and kayaks.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { sdfAt, sdfGrad, toXZ } from './world.js';
 import { boatGeo } from './models.js';
 import { waveHeight } from './water.js';

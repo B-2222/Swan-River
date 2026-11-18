@@ -1,5 +1,5 @@
 // HUD: speedo, zone sign, wanted stars, score, feed, speech bubbles, minimap and full map.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { W, toXZ } from './world.js';
 import { ZONES } from './zones.js';
 import { KN } from './jetski.js';

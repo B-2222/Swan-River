@@ -1,5 +1,5 @@
 // Static world built from the OSM data: buildings, bridges, jetties, moorings, landmarks, trees, and collision data.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { W, heightAt, sdfAt, coverAt, COVER, toXZ, sdfGrad } from './world.js';
 import { merge, M, boatGeo, treeGeos, col } from './models.js';
 

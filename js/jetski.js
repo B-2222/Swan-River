@@ -1,5 +1,5 @@
 // Player jet ski: physics (planing, jet steering, power slides, hops, swell jumps), model, spray emission.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { sdfAt, heightAt, sdfGrad, oceanAt, navigable } from './world.js';
 import { waveHeight, waveSlope } from './water.js';
 import { jetSkiModel, riderModel } from './models.js';
