@@ -2,6 +2,7 @@
 // Fremantle Doctor wind chop that is calmer in the lee of the shore, ocean swell through the moles, foam and wakes.
 import * as THREE from '../vendor/three.module.min.js';
 import { W, oceanAt, sdfAt } from './world.js';
+import { WAKE_GLSL } from './wakes.js';
 
 // Wave set shared by the shader and the physics so the jet ski rides the same surface you see.
 // dirX, dirZ, wavelength, amplitude, isSwell
@@ -12,6 +13,8 @@ const WAVES = [
 const G = 9.81;
 const WK = WAVES.map(w => { const k = 2 * Math.PI / w[2]; const l = Math.hypot(w[0], w[1]); return [w[0] / l, w[1] / l, k, w[3], Math.sqrt(G * k), w[4]]; });
 export const waveState = { chop: 1.0, time: 0 };
+// the highest the wind chop and swell can ever stand (wakes come on top of this)
+export function waveBound() { let b = 0; for (const w of WK) b += w[5] ? w[3] : w[3] * waveState.chop * 2; return b; }
 const shelter = (s) => Math.max(0.35, Math.min(1, -s / 110));
 
 // hull = true: a 3 m planing hull bridges short ripples, so the short chop is felt at reduced strength
@@ -123,13 +126,17 @@ export class Wake {
   }
 }
 
-export function createWater(scene, sky, renderer) {
+// fx: { foam: FoamField (white water around the ski), noise: noise texture (blue = foam lace), wakes: Wakes }
+export function createWater(scene, sky, renderer, fx) {
+  const FINE = 400, FINE_SEG = 266; // a fine 1.5 m patch round the camera so chop and boat wakes are really drawn
   const wake = new Wake(512);
   const shared = {
     uTime: { value: 0 }, uChop: { value: 1 }, uCenter: { value: new THREE.Vector2() },
     tData: { value: makeDataTexture() }, tLand: { value: W.landTex }, tNormal: { value: makeNormalMap() }, tWake: { value: wake.tex },
     uGrid: { value: new THREE.Vector4(W.X0, W.Z0, W.NX * W.CELL, W.NZ * W.CELL) },
     uWake: { value: new THREE.Vector3(0, 0, 512) },
+    tFoam: { value: fx.foam.texture }, uFoamC: { value: fx.foam.center }, uFoamSize: { value: fx.foam.size }, tNoise: { value: fx.noise },
+    tWakes: { value: fx.wakes.tex }, uWakeN: { value: 0 }, uFineC: { value: new THREE.Vector2() }, uFineHalf: { value: FINE / 2 },
     tReflect: { value: null }, uTexMatrix: { value: new THREE.Matrix4() }, uPlanar: { value: 0 },
   };
   const makeMat = (disp) => {
@@ -138,8 +145,9 @@ export function createWater(scene, sky, renderer) {
       Object.assign(sh.uniforms, shared, { uDisp: { value: disp } });
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', `#include <common>
-          uniform float uTime, uChop, uDisp; uniform vec2 uCenter; uniform vec4 uGrid; uniform sampler2D tData;
-          varying vec3 vWP; varying vec3 vNw; varying float vOc;`)
+          uniform float uTime, uChop, uDisp, uWakeN, uFineHalf; uniform vec2 uCenter, uFineC; uniform vec4 uGrid; uniform sampler2D tData, tWakes;
+          varying vec3 vWP; varying vec3 vNw; varying float vOc; varying float vWakeH;
+          ${WAKE_GLSL}`)
         .replace('#include <beginnormal_vertex>', `
           vec3 wp0 = (modelMatrix * vec4(position, 1.0)).xyz;
           vec2 p = wp0.xz;
@@ -149,9 +157,21 @@ export function createWater(scene, sky, renderer) {
           float sdfv = guv.x < 0.0 ? -64.0 : td.b * 128.0 - 64.0;
           float sh = clamp(-sdfv / 110.0, 0.35, 1.0);
           vec2 rel = abs(p - uCenter);
-          float fade = uDisp * (1.0 - smoothstep(780.0, 1010.0, max(rel.x, rel.y)));
+          float fade = min(uDisp, 1.0) * (1.0 - smoothstep(780.0, 1010.0, max(rel.x, rel.y)));
           float h = 0.0; vec2 d = vec2(0.0);
           ${glslWaves()}
+          vWakeH = 0.0;
+          if (uDisp > 1.5 && uWakeN > 0.5) {
+            // boat wakes, only on the fine patch (fading out before its edge)
+            vec2 fr = abs(p - uFineC);
+            float wf = 1.0 - smoothstep(uFineHalf - 60.0, uFineHalf - 8.0, max(fr.x, fr.y));
+            if (wf > 0.0) {
+              float w0 = wakeH(p);
+              float e = 0.4;
+              h += w0 * wf; vWakeH = w0 * wf;
+              d += vec2(wakeH(p + vec2(e, 0.0)) - w0, wakeH(p + vec2(0.0, e)) - w0) / e * wf;
+            }
+          }
           vec3 objectNormal = normalize(vec3(-d.x, 1.0, -d.y));
           vNw = objectNormal; vOc = oc;
           #ifdef USE_TANGENT
@@ -160,11 +180,14 @@ export function createWater(scene, sky, renderer) {
         .replace('#include <begin_vertex>', `vec3 transformed = vec3(position); transformed.y += h; vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;`);
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>
-          uniform float uTime, uChop, uPlanar; uniform vec4 uGrid; uniform vec3 uWake; uniform mat4 uTexMatrix;
-          uniform sampler2D tData, tLand, tNormal, tWake, tReflect;
-          varying vec3 vWP; varying vec3 vNw; varying float vOc;
-          float foamAmt = 0.0; vec3 nWorld = vec3(0.0, 1.0, 0.0);`)
+          uniform float uTime, uChop, uPlanar, uDisp, uFoamSize, uFineHalf; uniform vec4 uGrid; uniform vec3 uWake; uniform mat4 uTexMatrix;
+          uniform vec2 uFoamC, uFineC;
+          uniform sampler2D tData, tLand, tNormal, tWake, tReflect, tFoam, tNoise;
+          varying vec3 vWP; varying vec3 vNw; varying float vOc; varying float vWakeH;
+          float foamAmt = 0.0; vec3 nWorld = vec3(0.0, 1.0, 0.0); vec4 skiWake = vec4(0.0);`)
         .replace('#include <color_fragment>', `
+          // the coarse mesh leaves the middle to the fine patch
+          if (uDisp > 0.5 && uDisp < 1.5) { vec2 fr = abs(vWP.xz - uFineC); if (max(fr.x, fr.y) < uFineHalf - 1.0) discard; }
           vec2 guv = (vWP.xz - uGrid.xy) / uGrid.zw;
           vec4 dt = texture2D(tData, guv);
           float bed = dt.r * 90.0 - 30.0;
@@ -192,15 +215,34 @@ export function createWater(scene, sky, renderer) {
             foamAmt += wk * smoothstep(0.25, 0.75, br + wk * 0.4);
           }
           foamAmt += vOc * smoothstep(0.45, 0.75, vWP.y) * 0.4;
+          // --- foam / wake field (FoamField, from jetskirider): R = white foam, G = aerated milky water
+          vec2 fuv = (vWP.xz - uFoamC) / uFoamSize + 0.5;
+          vec2 fin = step(vec2(0.0), fuv) * step(fuv, vec2(1.0));
+          skiWake = texture2D(tFoam, fuv) * fin.x * fin.y;
+          float aer = clamp(skiWake.g, 0.0, 1.0);
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.30, 0.42, 0.40), aer * 0.55);
+          // --- foam: broken up into lace by the noise texture's blue channel
+          float lace = texture2D(tNoise, q * 0.11 + uTime * vec2(0.004, -0.003)).b * 0.65
+                     + texture2D(tNoise, q * 0.37 - uTime * vec2(0.006, 0.002)).b * 0.35;
+          float fine = texture2D(tNoise, q * 1.9).a;
+          float f = skiWake.r;
+          float sfoam = clamp((f * 1.3 - lace * 1.0) * 2.0, 0.0, 1.0);
+          sfoam = max(sfoam, clamp((f - 1.0) * 1.4, 0.0, 1.0));
+          // boat wake crests break white along the top
+          sfoam = max(sfoam, clamp((vWakeH * 1.5 - 0.25 - lace * 0.8) * 2.0, 0.0, 1.0));
+          sfoam *= 0.74 + 0.26 * fine;
+          float foamTex = 0.8 + 0.2 * lace + 0.12 * (fine - 0.5);
           foamAmt = clamp(foamAmt, 0.0, 1.0);
-          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.82, 0.86, 0.88), foamAmt);`)
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.82, 0.86, 0.88), foamAmt);
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.9, 0.93, 0.95) * foamTex, sfoam);
+          foamAmt = max(foamAmt, sfoam);`)
         .replace('#include <roughnessmap_fragment>', `float roughnessFactor = mix(roughness + smoothstep(200.0, 3000.0, length(cameraPosition - vWP)) * 0.12, 0.7, foamAmt);`)
         .replace('#include <normal_fragment_maps>', `
           vec2 q2 = vWP.xz;
           float dfar = 1.0 - smoothstep(120.0, 2200.0, length(cameraPosition - vWP)) * 0.75;
           vec3 n1 = texture2D(tNormal, q2 / 23.0 + vec2(0.021, 0.013) * uTime).xzy * 2.0 - 1.0;
           vec3 n2 = texture2D(tNormal, q2 / 7.9 + vec2(-0.018, 0.027) * uTime).xzy * 2.0 - 1.0;
-          float strength = (0.18 + 0.22 * uChop) * dfar;
+          float strength = (0.18 + 0.22 * uChop) * dfar + min(skiWake.g, 1.0) * 0.35; // churned water is rougher
           nWorld = normalize(vNw + vec3(n1.x + n2.x, 0.0, n1.z + n2.z) * strength);
           normal = normalize((viewMatrix * vec4(nWorld, 0.0)).xyz);`)
         .replace('#include <opaque_fragment>', `
@@ -216,7 +258,9 @@ export function createWater(scene, sky, renderer) {
     };
     return m;
   };
-  const nearMat = makeMat(1), farMat = makeMat(0);
+  const nearMat = makeMat(1), farMat = makeMat(0), fineMat = makeMat(2);
+  const fine = new THREE.Mesh(new THREE.PlaneGeometry(FINE, FINE, FINE_SEG, FINE_SEG).rotateX(-Math.PI / 2), fineMat);
+  fine.frustumCulled = false; fine.receiveShadow = true;
   const near = new THREE.Mesh(new THREE.PlaneGeometry(2048, 2048, 220, 220).rotateX(-Math.PI / 2), nearMat);
   near.frustumCulled = false; near.receiveShadow = true;
   const ringGeo = new THREE.BufferGeometry();
@@ -227,7 +271,7 @@ export function createWater(scene, sky, renderer) {
   ringGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); ringGeo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3)); ringGeo.setIndex(idx);
   const far = new THREE.Mesh(ringGeo, farMat);
   far.frustumCulled = false;
-  scene.add(near); scene.add(far);
+  scene.add(near); scene.add(far); scene.add(fine);
 
   // ---- planar reflections (High quality): mirror the camera across the water plane
   const mirror = new THREE.PerspectiveCamera();
@@ -259,18 +303,22 @@ export function createWater(scene, sky, renderer) {
     qv.x = (Math.sign(clipPlane.x) + pm[8]) / pm[0]; qv.y = (Math.sign(clipPlane.y) + pm[9]) / pm[5]; qv.z = -1; qv.w = (1 + pm[10]) / pm[14];
     clipPlane.multiplyScalar(2 / clipPlane.dot(qv));
     pm[2] = clipPlane.x; pm[6] = clipPlane.y; pm[10] = clipPlane.z + 1 - 0.003; pm[14] = clipPlane.w;
-    near.visible = far.visible = false;
+    near.visible = far.visible = fine.visible = false;
     const hidden = hide.filter(o => o.visible); hidden.forEach(o => o.visible = false);
     const old = renderer.getRenderTarget();
     renderer.setRenderTarget(rt); renderer.clear(); renderer.render(scene, mirror);
     renderer.setRenderTarget(old);
-    near.visible = far.visible = true; hidden.forEach(o => o.visible = true);
+    near.visible = far.visible = fine.visible = true; hidden.forEach(o => o.visible = true);
   }
 
   function update(dt, t, camPos, focus) {
     const step = 2048 / 220;
     const cx = Math.round(camPos.x / step) * step, cz = Math.round(camPos.z / step) * step;
     near.position.set(cx, 0, cz); far.position.set(cx, 0, cz);
+    const fs = FINE / FINE_SEG, fcx = Math.round(camPos.x / fs) * fs, fcz = Math.round(camPos.z / fs) * fs;
+    fine.position.set(fcx, 0, fcz); shared.uFineC.value.set(fcx, fcz);
+    shared.tFoam.value = fx.foam.texture; // ping-pong target: the latest one
+    shared.uWakeN.value = fx.wakes.count;
     shared.uCenter.value.set(cx, cz);
     shared.uTime.value = t;
     shared.uChop.value = waveState.chop;
@@ -278,6 +326,6 @@ export function createWater(scene, sky, renderer) {
     wake.update(dt);
     shared.uWake.value.set(wake.cx, wake.cz, wake.size);
   }
-  function setPlanar(on) { shared.uPlanar.value = on ? 1 : 0; nearMat.envMapIntensity = farMat.envMapIntensity = on ? 0.35 : 1.0; }
-  return { update, wake, renderReflection, setPlanar, meshes: [near, far] };
+  function setPlanar(on) { shared.uPlanar.value = on ? 1 : 0; nearMat.envMapIntensity = farMat.envMapIntensity = fineMat.envMapIntensity = on ? 0.35 : 1.0; }
+  return { update, wake, renderReflection, setPlanar, meshes: [near, far, fine] };
 }

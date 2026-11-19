@@ -12,15 +12,27 @@ export function makePhysWorld(opts = {}) {
   return {
     sample(x, z, t, out) {
       waveSample(x, z, t, ws);
-      out.water = ws.h + (opts.extraBumps ? opts.extraBumps(x, z) : 0);
+      let h = ws.h, gx = ws.dx, gz = ws.dz;
+      if (opts.extraBumps) {
+        // boat wakes: height plus slope, so the planing hull really rides up the face and launches off it
+        const e = 0.3, b0 = opts.extraBumps(x, z);
+        if (b0 !== 0) { // exactly 0 only outside every wake
+          h += b0;
+          gx += (opts.extraBumps(x + e, z) - b0) / e;
+          gz += (opts.extraBumps(x, z + e) - b0) / e;
+        }
+      }
+      out.water = h;
       out.ground = heightAt(x, z);      // river bed (negative) or land; the ocean beyond the map is -18
       out.vy = ws.dt;                   // vertical speed of the surface
-      const l = Math.hypot(ws.dx, 1, ws.dz);
-      out.nx = -ws.dx / l;              // horizontal parts of the water surface normal (0 when flat)
-      out.nz = -ws.dz / l;
+      const l = Math.hypot(gx, 1, gz);
+      out.nx = -gx / l;                 // horizontal parts of the water surface normal (0 when flat)
+      out.nz = -gz / l;
       out.mu = 0.5;
       return out;
     },
+    // water surface height (used by the spray effects)
+    waterHeight(x, z, t) { return waveSample(x, z, t, ws).h + (opts.extraBumps ? opts.extraBumps(x, z) : 0); },
     groundNormal(x, z, n) {
       const e = 2;
       const hx = (heightAt(x + e, z) - heightAt(x - e, z)) / (2 * e);

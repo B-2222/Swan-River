@@ -38,7 +38,9 @@ The handling is **SkiPhysics** (`js/skiphysics/`, from b-2222/jetskirider): a 6-
 * **Planing hull and carving.** At rest it floats on buoyancy, the bow rises over the hump, then planing lift takes over. Each hull point has tyre-like sideways grip that builds to a peak and then lets go, and the strakes bite harder the faster you go, so a hooked-up ski carves hard (around 1.5 to 2.5 g) and the rider leans it into the turn.
 * **Power slide.** Hold Shift while steering and the rider rolls the hull onto its side. Once the V bottom comes out of the water the grip lets go and the stern comes round. A light, flat Spark unhooks at about 17 to 37 degrees of roll; the heavy deep-V race and touring hulls (RXP-X, GP, Ultra) have to be thrown much further over (about 25 to 51 degrees) and held there before they slide.
 * **iBR.** Squeezing the brake drops a gate over the nozzle and fires the jet forwards and down, so you stop hard and then reverse slowly.
-* **Water.** Afternoon sea-breeze chop (the Fremantle Doctor) is rougher out in Melville Water and calmer in the lee of the shore, the ocean has swell coming through the moles, and boat wakes are real Kelvin wedges you can jump.
+* **Water.** Afternoon sea-breeze chop (the Fremantle Doctor) is rougher out in Melville Water and calmer in the lee of the shore, and the ocean has swell coming through the moles. Near the camera the water is drawn on a fine 1.5 m mesh so the chop and the wakes are really there.
+* **Boat wakes.** Every boat leaves a Kelvin wake (the 19.5 degree V) along the path it actually took, so a boat that turns leaves a curved wake. Each arm is a short wave train: a big leading ridge, a trough, a smaller ridge, breaking white along the top. The physics and the water mesh use the same wake maths, so what you see is exactly what you hit: crest a wake at speed and you launch. Runabouts and cruisers give a hop; the Rottnest fast cat (38 m, 30 knots once it is out of the 8 knot zones) throws a wake close to a metre high that gives you real air.
+* **Spray and white water.** The hull throws spray off the chines at speed and a wall of water off the leading side in a power slide; a carve peels a sheet off the outside, and landings splash (SkiEffects and Spray from jetskirider). Wherever droplets come down, and behind the jet, the water turns white (a foam map that follows the ski, then fades and breaks up into lace), with milky aerated water left behind. Boats churn white water too.
 * **Rooster tail.** The jet stream hits the surface behind the ski and erupts into a thick column that breaks up into spray, bigger with trim up and when the nozzle is swung in a turn.
 
 ## What is real
@@ -99,7 +101,9 @@ js/nav.js                 A* pathfinding over the real river
 js/zones.js               speed zones and place names
 js/hud.js, audio.js, input.js, models.js
 js/skiphysics/            SkiPhysics and the Sea-Doo specs from b-2222/jetskirider (no three.js), plus a hull-dependent slide threshold and an optional speed grip boost
-js/physworld.js           the world object SkiPhysics samples: the game's waves, river bed and land
+js/physworld.js           the world object SkiPhysics samples: the game's waves, boat wakes, river bed and land
+js/skifx/                 hull and slide spray (SkiEffects), droplets (Spray), FoamField and the noise texture, from jetskirider (no rooster tail)
+js/wakes.js               boat wakes along each boat's real track, shared by the physics and the water shader
 data/                     generated map data
 tools/                    Python scripts that build data/ from OpenStreetMap
 vendor/three.module.min.js  three.js r160 (MIT)

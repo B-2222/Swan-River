@@ -66,7 +66,8 @@ export class Spray {
       this.emit(x, y, z, Math.cos(a) * s, power * (0.8 + Math.random()), Math.sin(a) * s, 0.5 + Math.random() * 0.6, 1.2 + Math.random());
     }
   }
-  update(dt, light, tint) {
+  // foam (optional FoamField): droplets that come down on the water turn it white where they land
+  update(dt, light, tint, foam) {
     const g = 9.81, drag = Math.exp(-1.1 * dt);
     const P = this.pos, V = this.vel;
     for (let i = 0; i < this.N; i++) {
@@ -75,7 +76,10 @@ export class Spray {
       this.age[i] += dt;
       V[o] *= drag; V[o + 1] = V[o + 1] * drag - g * dt; V[o + 2] *= drag;
       P[o] += V[o] * dt; P[o + 1] += V[o + 1] * dt; P[o + 2] += V[o + 2] * dt;
-      if (P[o + 1] < -0.2 && V[o + 1] < 0) { this.age[i] = this.life[i]; this.alpha[i] = 0; continue; }
+      if (P[o + 1] < -0.2 && V[o + 1] < 0) {
+        if (foam && !this.src[i]) foam.stamp(P[o], P[o + 2], 0.3 + Math.min(this.size[i], 3) * 0.18, 0.22, 0.14);
+        this.age[i] = this.life[i]; this.alpha[i] = 0; continue;
+      }
       const t = this.age[i] / this.life[i];
       this.alpha[i] = (1 - t) * (t < 0.08 ? t / 0.08 : 1) * 0.8;
       this.size[i] *= 1 + dt * 0.9; // spray spreads into mist

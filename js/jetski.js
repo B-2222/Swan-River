@@ -256,18 +256,8 @@ export class JetSki {
           this.vel.x * 0.35 + jd.x * out + (Math.random() - 0.5) * 2.2, up, this.vel.z * 0.35 + jd.z * out + (Math.random() - 0.5) * 2.2,
           0.6 + Math.random() * 0.6 + spd * 0.015, 1.4 + Math.random() * 1.0);
       }
-      // chine "wings": the white sheets peeling off both sides of a planing hull
-      if (spd > 7) {
-        const m = Math.floor(spd * 4 * dt * (0.6 + 0.4 * tailScale)) + (Math.random() < 0.5 ? 1 : 0);
-        for (let k = 0; k < m; k++) {
-          const sd = Math.random() < 0.5 ? -1 : 1, along = this.L * (0.05 + Math.random() * 0.15);
-          const px = this.pos.x + fw.x * along + xw.x * sd * this.B * 0.5, pz = this.pos.z + fw.z * along + xw.z * sd * this.B * 0.5;
-          spray.emit(px, this.surface(px, pz) + 0.05, pz, this.vel.x * 0.7 + xw.x * sd * spd * 0.3, 1.2 + spd * 0.07 * Math.random(), this.vel.z * 0.7 + xw.z * sd * spd * 0.3,
-            0.3 + Math.random() * 0.25, 0.6 + Math.random() * 0.4);
-        }
-      }
     }
-    // ---- carve sheet: when the hull skids sideways a wall of water flies off the outside rail
+    // ---- carve sheet: when the hull skids sideways a wall of water flies off the outside rail (this one soaks people)
     if (!crashed && T.wet > 0.02) {
       const vlat = this.vel.dot(xw);
       const carve = Math.min(1, Math.max(0, (Math.abs(vlat) - 1.5) / 6) + this.drift * 0.5) * Math.min(1, spd / 10);
@@ -283,11 +273,7 @@ export class JetSki {
         }
       }
     }
-    if (wake && spd > 1 && T.wet > 0.02) {
-      const sx = this.pos.x - fw.x * this.L * 0.5, sz = this.pos.z - fw.z * this.L * 0.5;
-      wake.stamp(sx, sz, 1.3 + spd * 0.06, Math.min(0.9, 0.25 + spd / 30));
-      if (this.drift > 0.4 || Math.abs(this.vel.dot(xw)) > 3) wake.stamp(this.pos.x, this.pos.z, 2.4, 0.6);
-    }
+    // hull spray, the slide wall, landing splashes and the white water on the surface: js/skifx (SkiEffects + FoamField)
   }
 
   crash(reason) {

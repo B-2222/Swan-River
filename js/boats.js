@@ -82,18 +82,6 @@ export class AIBoat {
       }
     }
   }
-  // Kelvin wedge wake height at (x,z) for the jet ski to bounce off
-  wakeAt(x, z) {
-    if (this.speed < 3) return 0;
-    const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
-    const dx = x - this.x, dz = z - this.z;
-    const u = -(dx * fx + dz * fz) - this.L * 0.4; // distance behind the stern
-    if (u < 0 || u > 160) return 0;
-    const w = Math.abs(dx * Math.cos(this.yaw) - dz * Math.sin(this.yaw));
-    const arm = u * 0.36 + this.B * 0.5;
-    const d = w - arm;
-    return this.wakeAmp * Math.min(1, this.speed / 10) * Math.exp(-d * d / 4) * Math.exp(-u / 70);
-  }
   remove() { this.scene.remove(this.obj); }
 }
 
@@ -104,14 +92,14 @@ export class Boats {
     this.scene = scene; this.list = []; this.timer = 0; this.night = false;
     // Perth Water ferry: Elizabeth Quay ferry terminal <-> Mends Street Jetty (South Perth)
     this.eq = toXZ(115.8562, -31.9592); this.mends = toXZ(115.8540, -31.9702);
-    this.ferry = new AIBoat(scene, meshOf('ferry'), { x: this.eq[0], z: this.eq[1] + 30, max: 10 * KN, accel: 0.8, turn: 0.45, L: 21, B: 7, wakeAmp: 0.35, obey: true });
+    this.ferry = new AIBoat(scene, meshOf('ferry'), { x: this.eq[0], z: this.eq[1] + 30, max: 10 * KN, accel: 0.8, turn: 0.45, L: 21, B: 7, wakeAmp: 0.5, obey: true });
     this.ferry.kind = 'ferry'; this.ferry.dock = 0; this.ferry.wait = 5; this.ferry.goTo(this.mends[0], this.mends[1] - 25, false);
     // Rottnest fast cat from Barrack Street Jetty down the river and out to sea
     this.barrack = toXZ(115.8588, -31.9612);
     this.cat = null; this.catTimer = 8;
   }
   spawnCat() {
-    const b = new AIBoat(this.scene, meshOf('fastcat'), { x: this.barrack[0], z: this.barrack[1] + 20, yaw: Math.PI * 0.5, max: 30 * KN, accel: 1.2, turn: 0.35, L: 38, B: 10.4, wakeAmp: 0.9, obey: true });
+    const b = new AIBoat(this.scene, meshOf('fastcat'), { x: this.barrack[0], z: this.barrack[1] + 20, yaw: Math.PI * 0.5, max: 30 * KN, accel: 1.2, turn: 0.35, L: 38, B: 10.4, wakeAmp: 1.6, obey: true }); // a 38 m cat at 30 knots throws a serious wake
     b.kind = 'fastcat';
     const sea = toXZ(115.700, -32.040);
     b.goTo(sea[0], sea[1]);
@@ -122,8 +110,8 @@ export class Boats {
     if (!p || Math.hypot(p[0] - player.x, p[1] - player.z) < 250) return;
     const r = Math.random();
     let type, o = {}, max, L, B, wakeAmp, turn = 0.7;
-    if (r < 0.32) { type = 'runabout'; max = (22 + Math.random() * 14) * KN; L = 6.2; B = 2.4; wakeAmp = 0.45; o = { hull: [0xffffff, 0x1d3557, 0xc1121f, 0x111111][Math.floor(Math.random() * 4)] }; }
-    else if (r < 0.5) { type = 'cruiser'; max = (12 + Math.random() * 8) * KN; L = 11.5; B = 3.8; wakeAmp = 0.6; turn = 0.4; }
+    if (r < 0.32) { type = 'runabout'; max = (22 + Math.random() * 14) * KN; L = 6.2; B = 2.4; wakeAmp = 0.55; o = { hull: [0xffffff, 0x1d3557, 0xc1121f, 0x111111][Math.floor(Math.random() * 4)] }; }
+    else if (r < 0.5) { type = 'cruiser'; max = (12 + Math.random() * 8) * KN; L = 11.5; B = 3.8; wakeAmp = 0.75; turn = 0.4; }
     else if (r < 0.75) { type = 'yacht'; max = (4 + Math.random() * 3) * KN; L = 9.5; B = 3.1; wakeAmp = 0.1; turn = 0.3; o = { sail: true }; }
     else if (r < 0.88) { type = 'tinny'; max = (6 + Math.random() * 10) * KN; L = 4.2; B = 1.8; wakeAmp = 0.15; }
     else { type = 'kayak'; max = 1.6; L = 4.2; B = 0.7; wakeAmp = 0; turn = 0.8; o = { hull: [0xffcc00, 0xff4d00, 0x2ec4b6][Math.floor(Math.random() * 3)] }; }
@@ -154,11 +142,7 @@ export class Boats {
     const all = this.all();
     for (const b of all) b.update(dt, wake, spray, all);
   }
-  wakeBumps(x, z) {
-    let h = 0;
-    for (const b of this.all()) { if (Math.abs(b.x - x) < 200 && Math.abs(b.z - z) < 200) h += b.wakeAt(x, z); }
-    return h;
-  }
+
   collide(ski, list = this.all()) {
     for (const b of list) {
       const dx = ski.x - b.x, dz = ski.z - b.z;

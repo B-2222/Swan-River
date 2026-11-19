@@ -2,7 +2,12 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { loadWorld, W, sdfAt, heightAt, toXZ, oceanAt, navigable } from './world.js';
 import { createTerrain, createIslands } from './terrain.js';
-import { createWater, waveState } from './water.js';
+import { createWater, waveState, waveHeight, waveBound } from './water.js';
+import { Spray as SkiSpray } from './skifx/particles.js';
+import { SkiEffects } from './skifx/effects.js';
+import { FoamField } from './skifx/foam.js';
+import { makeNoiseTexture } from './skifx/textures.js';
+import { Wakes } from './wakes.js';
 import { createSky } from './sky.js';
 import { createStatic, POLICE_BASE } from './static.js';
 import { JetSki, ChaseCam, KN, CAM_NAMES } from './jetski.js';
@@ -68,6 +73,10 @@ resize();
 addEventListener('resize', resize);
 
 let sky, terrain, water, world, spray, people, traffic, boats, police, ski, cam, hud;
+// hull spray + white water (js/skifx, from jetskirider) and the boat wakes
+let noiseTex, fxSpray, fxFoam, effects, wakes;
+const fxLit = new THREE.Color(), fxShade = new THREE.Color();
+const surfaceAt = (x, z) => Math.max(waveHeight(x, z) + wakes.heightAt(x, z), heightAt(x, z));
 const sound = new Sound();
 
 function waterSpot(lon, lat) {
@@ -94,7 +103,10 @@ async function boot() {
   sky = await step('Lighting up the sky...', 72, () => createSky(scene, renderer));
   terrain = await step('Shaping Kings Park and the river banks...', 76, () => createTerrain(scene));
   await step('Rottnest on the horizon...', 78, () => createIslands(scene));
-  water = await step('Filling the Swan River...', 80, () => createWater(scene, sky, renderer));
+  noiseTex = makeNoiseTexture(256);
+  fxFoam = new FoamField(renderer);
+  wakes = new Wakes();
+  water = await step('Filling the Swan River...', 80, () => createWater(scene, sky, renderer, { foam: fxFoam, noise: noiseTex, wakes }));
   world = await step('Building the CBD, bridges and jetties...', 86, () => createStatic(scene));
   await step('Charting the channels...', 92, () => buildNav());
   spray = new Spray(scene);
@@ -112,7 +124,10 @@ async function boot() {
     siren: (d) => { state.sirenDist = d; },
     escaped: () => addScore(1500, 'ESCAPED!'),
   });
-  ski.extraBumps = (x, z) => boats.wakeBumps(x, z);
+  ski.extraBumps = (x, z) => wakes.heightAt(x, z);
+  fxSpray = new SkiSpray({ max: 16000, noiseTex });
+  scene.add(fxSpray.mesh);
+  effects = new SkiEffects(fxSpray, fxFoam, ski.world);
   document.getElementById('optGfx').value = String(state.gfx);
   applyQuality();
   spawnAt(0);
@@ -140,6 +155,7 @@ function teleportTo(x, z, yaw, label) {
   let p = [x, z];
   if (!navigable(x, z, -8)) { p = randomWater(x, z, 250, -10, 300) || randomWater(x, z, 600, -10, 600); if (!p) { hud.msg('Click closer to the river', 'bad'); return false; } }
   ski.place(p[0], p[1], yaw ?? ski.yaw);
+  fxSpray.clear(); fxFoam.clear();
   cam.init = false;
   hud.msg(`Teleported to ${placeName(p[0], p[1])}`, 'good');
   state.mapOpen = false; document.getElementById('bigmap').classList.add('hidden');
@@ -259,7 +275,7 @@ let fpsAcc = 0, fpsN = 0;
 const tint = new THREE.Color();
 function render() {
   renderer.shadowMap.needsUpdate = true;
-  if (state.gfx === 2) water.renderReflection(renderer, scene, camera, [spray.points, ski.jet.mesh]);
+  if (state.gfx === 2) water.renderReflection(renderer, scene, camera, [spray.points, ski.jet.mesh, fxSpray.mesh]);
   renderer.render(scene, camera);
 }
 function loop(now) {
@@ -304,6 +320,36 @@ function autoQuality(dt) {
   } else aq.done = true;
 }
 
+// After the physics steps, in this order: hull spray -> droplets (landing ones stamp foam) -> foam field.
+function updateWhiteWater(dt) {
+  effects.density = state.gfx === 0 ? 0.55 : 1;
+  effects.update(dt, ski.phys, waveState.time);
+  // spray lit to match this scene's sun and sky (instead of jetskirider's time-of-day object)
+  const k = 0.2 + 0.8 * sky.light;
+  fxLit.setRGB(0.72 * k + 0.4 * sky.sunColor.r * sky.light, 0.74 * k + 0.4 * sky.sunColor.g * sky.light, 0.76 * k + 0.4 * sky.sunColor.b * sky.light);
+  fxShade.setRGB(0.42 * k, 0.52 * k, 0.62 * k);
+  fxSpray.uniforms.uLit.value.copy(fxLit);
+  fxSpray.uniforms.uShade.value.copy(fxShade);
+  fxSpray.update(dt, surfaceAt, waveBound() + wakes.maxAmp * 2 + 0.3, fxFoam);
+  // jet wash: the pump's stream boils the surface white right behind the nozzle (the game's own rooster
+  // tail droplets add more foam where they land, via spray.update above)
+  const T = ski.tele, flow = Math.max(0, Math.min(1, (T.power || 0) * T.pumpLoad));
+  if (flow > 0.02 && ski.wipeout <= 0 && T.reverse < 0.05 && T.nozzleDepth > -0.4) {
+    const f = ski.fwd, wx = T.nozzle.x - f.x * 0.6, wz = T.nozzle.z - f.z * 0.6;
+    const slow = Math.max(0.55, Math.min(1.6, 1.6 - ski.speed / 22)); // slow = water piles up, fast = stretched thin
+    fxFoam.stamp(wx, wz, 0.45 + 0.3 * flow, (0.25 + flow * 1.3) * dt * 2.8 * slow, (0.3 + flow) * dt * 4);
+    fxFoam.stamp(wx - f.x * 1.2, wz - f.z * 1.2, 0.55 + 0.35 * flow, flow * dt * 1.8 * slow, flow * dt * 5);
+  }
+  // boats near the ski churn white water behind them and peel it off their bows
+  for (const b of [...boats.all(), ...police.units.map((u) => u.boat)]) {
+    if (b.speed < 2 || Math.abs(b.x - ski.x) > 170 || Math.abs(b.z - ski.z) > 170) continue;
+    const fx = -Math.sin(b.yaw), fz = -Math.cos(b.yaw), rx = -fz, rz = fx, k2 = Math.min(1, b.speed / 12);
+    fxFoam.stamp(b.x - fx * b.L * 0.5, b.z - fz * b.L * 0.5, b.B * 0.55 + 0.4, k2 * dt * 6, k2 * dt * 7);
+    for (const sd of [-1, 1]) fxFoam.stamp(b.x + fx * b.L * 0.3 + rx * sd * b.B * 0.55, b.z + fz * b.L * 0.3 + rz * sd * b.B * 0.55, 0.6 + b.B * 0.12, k2 * dt * 3, k2 * dt * 2);
+  }
+  fxFoam.update(ski.phys.px, ski.phys.pz, dt);
+}
+
 let simT = 0;
 function update(dt, t, inp) {
   waveState.time = t;
@@ -328,7 +374,9 @@ function update(dt, t, inp) {
 
   // ---- player
   tint.copy(sky.sunColor).lerp(new THREE.Color(1, 1, 1), 0.6);
+  wakes.update([...boats.all(), ...police.units.map((u) => u.boat)], ski, t);
   ski.update(dt, inp, spray, water.wake, state.tail, sky.light, sky.sunDir, tint);
+  updateWhiteWater(dt);
   const allBoats = boats.all();
   const hitBoat = boats.collide(ski, allBoats) || boats.collide(ski, police.units.map(u => u.boat));
   state.hitCool = (state.hitCool || 0) - dt;
@@ -389,7 +437,7 @@ function update(dt, t, inp) {
   people.update(dt, ski);
   traffic.update(dt, ski);
   spray.hitTest([...people.targets(ski, soakPerson), ...traffic.targets(soakCar), ...police.targets(soakCop)]);
-  spray.update(dt, sky.light, tint);
+  spray.update(dt, sky.light, tint, fxFoam);
   cam.update(dt, ski);
   water.update(dt, t, camera.position, ski);
   terrain.update(camera.position, state.gfx);
@@ -410,4 +458,5 @@ function sim(seconds, inp, fps = 30) {
 }
 window.__game = { sim, warm: () => { for (let i = 0; i < 40; i++) { terrain.update(camera.position, state.gfx); world.update(camera.position, state.gfx, sky.night); } }, toXZ, state, scene, renderer, camera,
   get water() { return water; }, get spray() { return spray; }, get cam() { return cam; }, get boats() { return boats; }, get traffic() { return traffic; },
-  get ski() { return ski; }, get police() { return police; }, get sky() { return sky; }, get people() { return people; }, input, teleportTo, applyQuality };
+  get ski() { return ski; }, get police() { return police; }, get sky() { return sky; }, get people() { return people; }, input, teleportTo, applyQuality,
+  get fxSpray() { return fxSpray; }, get fxFoam() { return fxFoam; }, get effects() { return effects; }, get wakes() { return wakes; }, updateWhiteWater, waveState };
