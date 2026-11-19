@@ -95,6 +95,8 @@ js/police.js              Water Police AI, wanted level, PolAir
 js/nav.js                 A* pathfinding over the real river
 js/zones.js               speed zones and place names
 js/hud.js, audio.js, input.js, models.js
+js/skiphysics/            SkiPhysics and the Sea-Doo specs, copied from b-2222/jetskirider (no three.js)
+js/physworld.js           the world object SkiPhysics samples: the game's waves, river bed and land
 data/                     generated map data
 tools/                    Python scripts that build data/ from OpenStreetMap
 vendor/three.module.min.js  three.js r160 (MIT)

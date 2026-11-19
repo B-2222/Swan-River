@@ -26,6 +26,21 @@ export function waveHeight(x, z, t = waveState.time, ocean = oceanAt(x, z), hull
   return h;
 }
 
+// Height, slope (dh/dx, dh/dz) and vertical speed (dh/dt) of the visible surface in one pass,
+// for physics that samples the water directly (see physworld.js).
+export function waveSample(x, z, t = waveState.time, out = {}) {
+  const ocean = oceanAt(x, z), sh = shelter(sdfAt(x, z));
+  let h = 0, dx = 0, dz = 0, dt = 0;
+  for (const w of WK) {
+    const amp = w[5] ? w[3] * ocean : w[3] * waveState.chop * (1 + ocean) * sh;
+    const ph = w[2] * (w[0] * x + w[1] * z) - w[4] * t;
+    const s = Math.sin(ph), c = amp * Math.cos(ph);
+    h += amp * s; dx += c * w[2] * w[0]; dz += c * w[2] * w[1]; dt -= c * w[4];
+  }
+  out.h = h; out.dx = dx; out.dz = dz; out.dt = dt;
+  return out;
+}
+
 function glslWaves() {
   let s = '';
   WK.forEach((w) => {
