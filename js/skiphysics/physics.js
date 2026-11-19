@@ -119,6 +119,13 @@ export class SkiPhysics {
     this.leanRate = spec.leanRate ?? (light ? 1.5 : 0.7); // how fast the rider can roll the hull onto its side
     this.unhook = spec.unhook ?? (light ? 0.28 : 0.36); // grip left once the V is out of the water
     this.carve = spec.carve ?? (light ? 0.62 : 0.6); // full-lock demand as a fraction of grip
+    // How far the hull has to be rolled before the V lets go of the water. A light flat Spark
+    // unhooks at about 17 to 37 degrees; a heavy deep-V (RXP, RXT, Ultra) has to be thrown much
+    // further over (about 27 to 50 degrees) and the rider has to hold it there.
+    const vee = spec.vee ?? clamp((spec.mass - 280) / 190, 0, 1) * (spec.big ? 1.1 : 1);
+    this.unhookR0 = spec.unhookR0 ?? 0.3 + 0.17 * vee;
+    this.unhookR1 = spec.unhookR1 ?? 0.65 + 0.22 * vee;
+    this.bankMax = 0.92 + 0.08 * vee;
     this.hopK = spec.hop ?? (light ? 1 : 0.5);
     this.nozzleL = { x: -0.4 * spec.L, y: -0.245, z: 0 };
     this.intakeL = { x: -0.17 * spec.L, y: -0.45, z: 0 };
@@ -223,7 +230,7 @@ export class SkiPhysics {
       const rate = want ? this.leanRate * (1 + trimFrac * 0.5) : -2.5;
       this.leanIn = clamp(this.leanIn + rate * dt, 0, 1);
     }
-    const unhooked = this.leanIn * smoothstep(0.3, 0.65, Math.abs(rollNow)) * upright;
+    const unhooked = this.leanIn * smoothstep(this.unhookR0, this.unhookR1, Math.abs(rollNow)) * upright;
     const gripMul = 1 - (1 - this.unhook) * unhooked;
 
     let Fx = 0, Fy = -m * G, Fz = 0;
@@ -238,6 +245,9 @@ export class SkiPhysics {
 
     const ucm = this.vx * fhx + this.vz * fhz;
     const vcm = this.vx * rhx + this.vz * rhz;
+    // Optional (spec.gripFast): a planing hull's strakes and chines bite harder the faster it goes, so it
+    // carves tight at speed while still skating around at low speed. 0 keeps the original handling.
+    const gripEff = sp.grip * (1 + (sp.gripFast || 0) * smoothstep(4, 14, Math.abs(ucm)));
 
     // --- hull points --------------------------------------------------------
     const S = this._s;
@@ -312,7 +322,7 @@ export class SkiPhysics {
       const axs = Math.abs(vp / vpk);
       // tyre-like: builds to a peak, holds, then lets go progressively
       let g = axs < 1 ? (2 * axs) / (1 + axs * axs) : 1 - (1 - sp.slide) * smoothstep(1.2, 4.5, axs);
-      const fl2 = -sign(vp) * (sp.grip * gripMul * g + 0.045 * vp * vp) * gripSub * p.wl;
+      const fl2 = -sign(vp) * (gripEff * gripMul * g + 0.045 * vp * vp) * gripSub * p.wl;
       addForce(ox, 0, oz, fu * fhx * m, 0, fu * fhz * m);
       // Lateral force keeps only part of its yaw lever: enough for the centre
       // of lateral resistance to matter (planted bow = tail-happy) without
@@ -382,7 +392,7 @@ export class SkiPhysics {
       const jetFrac = Math.sqrt(power * this.pumpLoad) * (c.brake > 0.05 ? 0.6 : 1);
       const au = Math.abs(ucm);
       const spdH = Math.hypot(this.vx, this.vz);
-      const rHook = Math.min((au + 5 * jetFrac) / sp.turnR, (sp.grip * this.carve) / Math.max(au, 1));
+      const rHook = Math.min((au + 5 * jetFrac) / sp.turnR, (gripEff * this.carve) / Math.max(au, 1));
       const slipA = spdH > 2 ? Math.abs(Math.atan2(vcm, Math.abs(ucm) + 0.5)) : 0;
       const li = this.leanIn;
       // only a committed slide lets the stern come round; otherwise the rider
@@ -399,8 +409,8 @@ export class SkiPhysics {
 
     // --- banking: the V hull + rider lean the ski into the turn -------------
     const aLat = yawRateR * Math.max(ucm, 0);
-    const bankRaw = clamp(Math.atan2(aLat, G) * 0.75 + sN * 0.1 * clamp(ucm / 8, 0, 1), -0.6, 0.6) + Math.sign(sN) * this.leanIn * 0.6;
-    this.bankS = damp(this.bankS || 0, clamp(bankRaw, -0.92, 0.92), 0.22, dt);
+    const bankRaw = clamp(Math.atan2(aLat, G) * 0.75 + sN * 0.1 * clamp(ucm / 8, 0, 1), -0.6, 0.6) + Math.sign(sN) * this.leanIn * (0.6 + 0.25 * (this.unhookR1 - 0.65) / 0.22);
+    this.bankS = damp(this.bankS || 0, clamp(bankRaw, -this.bankMax, this.bankMax), 0.22, dt);
     const bankT = this.bankS;
     const roll = -Math.asin(clamp(ry, -1, 1));
     const wRoll = this.wx * fx + this.wy * fy + this.wz * fz;

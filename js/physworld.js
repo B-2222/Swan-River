@@ -4,6 +4,7 @@
 // Both use the game's world axes: x east, z south, y up (heading 0 for SkiPhysics points east).
 import { heightAt } from './world.js';
 import { waveSample } from './water.js';
+import { skiById } from './skiphysics/specs.js';
 
 // opts.extraBumps(x, z): optional extra water height, e.g. boat wakes (Boats.wakeBumps)
 export function makePhysWorld(opts = {}) {
@@ -36,3 +37,15 @@ export const flatWorld = {
   sample(x, z, t, out) { out.water = 0; out.ground = -30; out.vy = 0; out.nx = 0; out.nz = 0; out.mu = 0.5; return out; },
   groundNormal(x, z, n) { n.x = 0; n.y = 1; n.z = 0; return n; },
 };
+
+// Physics spec for each ski in the game's garage. Masses include an 80 kg rider.
+// gripFast makes the hull bite harder at planing speed so it carves tight like a real ski (about 1.5 to
+// 2.5 g on a hard turn); unhook is scaled down by the same factor so a committed power slide still
+// lets go as easily as the stock jetskirider tune.
+const tune = (s, gripFast, carve, turnR) => ({ ...s, gripFast, carve, turnR, unhook: (s.style === 'spark' ? 0.28 : 0.36) / (1 + gripFast) });
+export function physSpecFor(spec) {
+  if (spec.id === 'spark') return tune(skiById('trixx'), 1.6, 1.0, 2.2);
+  if (spec.id === 'gp') return tune({ ...skiById('rxp'), id: 'gp', name: 'GP SVHO', L: 3.35, B: 1.24, mass: 435, thrust: 4750, top: 29.3, jet: 42, grip: 33 }, 1.25, 0.82, 3.1);
+  if (spec.id === 'ultra') return tune({ ...skiById('rxt'), id: 'ultra', name: 'ULTRA 310R', L: 3.66, B: 1.21, mass: 515, thrust: 5300, top: 30.4, jet: 45, grip: 30, leanTorque: 280, big: true }, 1.1, 0.8, 3.4);
+  return tune(skiById('rxp'), 1.4, 0.8, 3.0);
+}

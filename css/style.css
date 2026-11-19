@@ -123,3 +123,8 @@ body.touch #hint { display: none; }
   #score { font-size: 22px; }
   #stars { font-size: 22px; }
 }
+
+#tailChip { margin-top: 6px; font-size: 12px; letter-spacing: 1px; color: var(--dim); cursor: pointer; pointer-events: auto; user-select: none; }
+#tailChip b { color: #fff; }
+#tailChip small { opacity: .6; }
+#tailChip.pop b { color: #6fe3ff; }

@@ -10,13 +10,15 @@ Open `index.html` through any static web server (for example `python3 -m http.se
 | --- | --- |
 | W / Up | Throttle |
 | S / Down | Brake, then reverse (iBR style: the gate drops over the nozzle) |
-| A / D, Left / Right | Steer. Like a real ski, you need throttle to turn |
-| Q / E | Trim the nozzle down / up (up: bow lifts, faster, bigger rooster tail; down: more grip in turns) |
-| Shift | Power slide (throws a huge sheet of spray off the outside rail) |
-| Space | Hop (pull the bars and pop the hull out) |
+| A / D, Left / Right | Steer. Like a real ski, you need throttle to turn; the bars ramp in so you can carve precisely |
+| Q / E | Trim the nozzle down / up and it stays there (up: bow lifts, faster, bigger rooster tail, hops; down: more grip in turns) |
+| Shift (while steering) | Power slide: the rider throws the hull onto its side until the V lets go and the ski slides (huge sheet of spray off the outside rail) |
+| Space | Tap to hop, hold to pull back on the bars (wheelie) |
+| [ / ] (or - / =) | Rooster tail smaller / bigger, right there on the water: Small, Big, Massive, Ridiculous, Insane. You can also click the TAIL readout under the speedo |
 | 1 to 8 | Teleport to the launch spots (0 jumps to the Water Police base) |
 | M | Full map with speed zones. Click anywhere on the water to teleport there |
-| C | Camera (chase, far, first person, drone) |
+| C | Camera: chase, far chase, first person, passenger looking back (sat behind the rider facing the rooster tail), drone |
+| V (hold) | Look back from any camera |
 | R | Back to the nearest water if stuck |
 | T | Skip time forward 3 hours |
 | Esc / P | Menu (change ski, launch spot, settings) |
@@ -28,13 +30,14 @@ Ride close along the foreshore, then turn **away** from the people so the carve 
 
 ## How the jet ski works
 
-The ski is a rigid body floating on 21 hull panels, built from how real personal watercraft work:
+The handling is **SkiPhysics** (`js/skiphysics/`, from b-2222/jetskirider): a 6-degree-of-freedom rigid body sampled at 11 points on the hull, floating on the game's own water (the same waves the water shader draws, boat wakes, the real river bed and the land, wired up in `js/physworld.js`).
 
 * **Jet pump.** Water comes in through an intake under the hull and is fired out of the nozzle at the stern. Thrust is applied at the nozzle and is limited by engine power at speed, so the 325 hp RXP-X tops out at about 58 knots and the 90 hp Spark at about 43.
-* **Thrust vectoring.** The handlebars swing the nozzle. Off the throttle there is almost no steering, apart from a short off-throttle steering assist when you turn hard.
+* **Thrust vectoring.** The handlebars swing the nozzle. Off the throttle there is very little steering, exactly like the real thing.
 * **Ventilation.** If the intake leaves the water (jumps, big rolls, skipping across chop at full noise) the pump sucks air, the revs flare and the thrust disappears until it hooks up again.
-* **Planing hull.** At rest it floats on buoyancy with about 13 cm of draft, the bow rises over the hump, then dynamic pressure lifts it onto the plane. The chines grip sideways, which is what lets it carve, and the rider leans it into turns.
-* **iBR.** Squeezing the brake drops a gate over the nozzle and fires the thrust forwards: about 4 seconds from 45 knots to walking pace, then reverse at about 5 knots.
+* **Planing hull and carving.** At rest it floats on buoyancy, the bow rises over the hump, then planing lift takes over. Each hull point has tyre-like sideways grip that builds to a peak and then lets go, and the strakes bite harder the faster you go, so a hooked-up ski carves hard (around 1.5 to 2.5 g) and the rider leans it into the turn.
+* **Power slide.** Hold Shift while steering and the rider rolls the hull onto its side. Once the V bottom comes out of the water the grip lets go and the stern comes round. A light, flat Spark unhooks at about 17 to 37 degrees of roll; the heavy deep-V race and touring hulls (RXP-X, GP, Ultra) have to be thrown much further over (about 25 to 51 degrees) and held there before they slide.
+* **iBR.** Squeezing the brake drops a gate over the nozzle and fires the jet forwards and down, so you stop hard and then reverse slowly.
 * **Water.** Afternoon sea-breeze chop (the Fremantle Doctor) is rougher out in Melville Water and calmer in the lee of the shore, the ocean has swell coming through the moles, and boat wakes are real Kelvin wedges you can jump.
 * **Rooster tail.** The jet stream hits the surface behind the ski and erupts into a thick column that breaks up into spray, bigger with trim up and when the nozzle is swung in a turn.
 
@@ -86,7 +89,7 @@ js/terrain.js             land mesh in level-of-detail chunks, Rottnest
 js/water.js               water surface, waves (shared with the physics), wakes, planar reflections
 js/sky.js                 sky, clouds, day and night, environment lighting
 js/static.js              buildings, bridges, jetties, moorings, landmarks, Water Police base, trees, collisions
-js/jetski.js              rigid-body jet ski physics and chase camera
+js/jetski.js              the player's ski on SkiPhysics: controls, crashes, shore, spray, cameras
 js/jetstream.js           the rooster tail jet
 js/spray.js               spray particles and hit detection
 js/npc.js                 people, swimmers, kangaroos, bridge traffic
@@ -95,7 +98,7 @@ js/police.js              Water Police AI, wanted level, PolAir
 js/nav.js                 A* pathfinding over the real river
 js/zones.js               speed zones and place names
 js/hud.js, audio.js, input.js, models.js
-js/skiphysics/            SkiPhysics and the Sea-Doo specs, copied from b-2222/jetskirider (no three.js)
+js/skiphysics/            SkiPhysics and the Sea-Doo specs from b-2222/jetskirider (no three.js), plus a hull-dependent slide threshold and an optional speed grip boost
 js/physworld.js           the world object SkiPhysics samples: the game's waves, river bed and land
 data/                     generated map data
 tools/                    Python scripts that build data/ from OpenStreetMap

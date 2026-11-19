@@ -5,7 +5,7 @@ import { createTerrain, createIslands } from './terrain.js';
 import { createWater, waveState } from './water.js';
 import { createSky } from './sky.js';
 import { createStatic, POLICE_BASE } from './static.js';
-import { JetSki, ChaseCam, KN } from './jetski.js';
+import { JetSki, ChaseCam, KN, CAM_NAMES } from './jetski.js';
 import { Spray } from './spray.js';
 import { People, Traffic, LINES } from './npc.js';
 import { Boats } from './boats.js';
@@ -31,6 +31,22 @@ const SPAWNS = [
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const state = { running: false, paused: true, started: false, score: 0, combo: 1, comboT: 0, fines: 0, skiIdx: 0, spawnIdx: 0, tail: 1.6, gfx: isTouch ? 1 : 2,
   driftT: 0, driftPts: 0, bridgeCool: {}, donut: 0, donutT: 0, oceanBadge: false, rottoBadge: false, speedT: 0, freestyle: false, nearMissCool: 0, mapOpen: false };
+// rooster tail size, changeable on the water with [ and ] (or by clicking the TAIL chip under the speedo)
+const TAILS = [[0.5, 'Small'], [1, 'Big'], [1.6, 'Massive'], [2.4, 'Ridiculous'], [3.4, 'Insane']];
+function showTail() {
+  const k = TAILS.reduce((b, t, i) => (Math.abs(t[0] - state.tail) < Math.abs(TAILS[b][0] - state.tail) ? i : b), 0);
+  document.getElementById('tailName').textContent = TAILS[k][1];
+  document.getElementById('optTail').value = String(TAILS[k][0]);
+  return k;
+}
+function setTail(d) {
+  const k = Math.max(0, Math.min(TAILS.length - 1, showTail() + d));
+  state.tail = TAILS[k][0]; showTail();
+  hud.msg(`Rooster tail: ${TAILS[k][1]}`);
+  const c = document.getElementById('tailChip'); c.classList.add('pop'); setTimeout(() => c.classList.remove('pop'), 400);
+}
+document.getElementById('tailChip').onclick = () => setTail(state.tail >= TAILS[TAILS.length - 1][0] ? -(TAILS.length - 1) : 1);
+
 
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isTouch, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
@@ -150,7 +166,7 @@ function buildMenu() {
   document.getElementById('startBtn').textContent = state.started ? 'BACK ON THE WATER' : 'HIT THE WATER';
 }
 document.getElementById('startBtn').onclick = () => {
-  state.tail = parseFloat(document.getElementById('optTail').value);
+  state.tail = parseFloat(document.getElementById('optTail').value); showTail();
   const g = parseInt(document.getElementById('optGfx').value, 10);
   if (g !== state.gfx) { state.gfx = g; resize(); applyQuality(); aq.done = true; }
   sound.enabled = document.getElementById('optSound').checked;
@@ -292,7 +308,10 @@ let simT = 0;
 function update(dt, t, inp) {
   waveState.time = t;
   waveState.chop = sky.hour > 12 && sky.hour < 19 ? 1.25 : 0.65; // the Fremantle Doctor sea breeze in the arvo
-  if (takePressed('c')) cam.mode = (cam.mode + 1) % 4;
+  if (takePressed('c')) { cam.mode = (cam.mode + 1) % CAM_NAMES.length; hud.msg(CAM_NAMES[cam.mode]); }
+  cam.lookBack = !!inp.keys.v;
+  if (takePressed(']') || takePressed('=')) setTail(1);
+  if (takePressed('[') || takePressed('-')) setTail(-1);
   if (takePressed('m')) { state.mapOpen = !state.mapOpen; document.getElementById('bigmap').classList.toggle('hidden', !state.mapOpen); }
   if (takePressed('r')) { const p = randomWater(ski.x, ski.z, 400, -12, 200); if (p) { ski.place(p[0], p[1], ski.yaw); hud.msg('Back on the water'); } }
   if (takePressed('t')) { sky.hour = (sky.hour + 3) % 24; sky.forceEnv(); hud.msg(`Time skip: ${sky.timeString()}`); }
